@@ -1,0 +1,11 @@
+{
+  "itemGroup.fib_tab": "FIBMOD",
+
+  "item.fib_mod.fib_logo_mod": "FIB-LOGO",
+
+  "block.fib_mod.ice_maker": "ice_maker",
+  "block.fib_mod.radio_station": "radio_station",
+
+  "entity.minecraft.villager.fib_mod.tacz_merchantr": "arms dealer",
+  "entity.minecraft.villager.fib_mod.rs_merchantr": "RS merchantr"
+}

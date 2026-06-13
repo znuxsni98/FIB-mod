@@ -1,0 +1,46 @@
+package com.fib.fib.init.block;
+
+import com.fib.fib.FIBMod;
+import com.fib.fib.init.block.custom.Radio_Station;
+import com.fib.fib.init.item.ModItems;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+
+import java.util.function.Supplier;
+
+public class ModBlocks {
+    public static final DeferredRegister<Block> BLOCKS =
+            DeferredRegister.create(ForgeRegistries.BLOCKS, FIBMod.MOD_ID);
+    //方块注册
+
+//    public static final RegistryObject<Block> ZC  =
+//            registryBlock("zcm", () -> new Block(BlockBehaviour.Properties.of()));
+
+      public static final RegistryObject<Block> ICE_MAKER =
+              registryBlock("ice_maker", () -> new Block(BlockBehaviour.Properties.of().noOcclusion()));
+
+      public static final RegistryObject<Block> RADIO_STATION =
+              registryBlock("radio_station", () ->new Radio_Station(BlockBehaviour.Properties.of().noOcclusion()));
+
+
+
+    private static <T extends Block> void registerBlockItems(String name, RegistryObject<T> block) {
+        ModItems.ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties()));
+    }
+
+    private static <T extends Block> RegistryObject<T> registryBlock(String name, Supplier<T> block) {
+        RegistryObject<T> blocks = BLOCKS.register(name, block);
+        registerBlockItems(name, blocks);
+        return blocks;
+    }
+
+    public static void register(IEventBus eventBus) {
+        BLOCKS.register(eventBus);
+    }
+}
