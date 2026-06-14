@@ -18,7 +18,9 @@ public class ModBlocKLootTablesProvider extends BlockLootSubProvider {
       //方块掉落
       dropSelf(ModBlocks.ICE_MAKER.get());
       dropSelf(ModBlocks.RADIO_STATION.get());
-
+      dropSelf(ModBlocks.SCIENTISTS_EXPERIMENTAL_PLATFORM.get());
+      dropSelf(ModBlocks.BOWL_BLOCK.get());
+      dropSelf(ModBlocks.ENGINEER_WORKBENCH.get());
     }
 
     @Override

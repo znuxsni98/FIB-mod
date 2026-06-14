@@ -23,7 +23,9 @@ public class ModCreativeModeTabs {
                         //pOutput.accept(ModItems.物品.get());
                         pOutput.accept(ModBlocks.ICE_MAKER.get());
                         pOutput.accept(ModBlocks.RADIO_STATION.get());
-
+                        pOutput.accept(ModBlocks.BOWL_BLOCK.get());
+                        pOutput.accept(ModBlocks.ENGINEER_WORKBENCH.get());
+                        pOutput.accept(ModBlocks.SCIENTISTS_EXPERIMENTAL_PLATFORM.get());
                     }).build());
 
     public static void register(IEventBus eventBus) {

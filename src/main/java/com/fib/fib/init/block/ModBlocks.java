@@ -1,7 +1,10 @@
 package com.fib.fib.init.block;
 
 import com.fib.fib.FIBMod;
+import com.fib.fib.init.block.custom.Bowl_Block;
+import com.fib.fib.init.block.custom.Engineer_Workbench;
 import com.fib.fib.init.block.custom.Radio_Station;
+import com.fib.fib.init.block.custom.Scientists_Experimental_Platform;
 import com.fib.fib.init.item.ModItems;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -25,8 +28,19 @@ public class ModBlocks {
       public static final RegistryObject<Block> ICE_MAKER =
               registryBlock("ice_maker", () -> new Block(BlockBehaviour.Properties.of().noOcclusion()));
 
+
+
       public static final RegistryObject<Block> RADIO_STATION =
               registryBlock("radio_station", () ->new Radio_Station(BlockBehaviour.Properties.of().noOcclusion()));
+      
+      public static final RegistryObject<Block> BOWL_BLOCK =
+            registryBlock("bowl_block", () ->new Bowl_Block(BlockBehaviour.Properties.of().noOcclusion()));
+
+      public static final RegistryObject<Block> ENGINEER_WORKBENCH =
+            registryBlock("engineer_workbench", () ->new Engineer_Workbench(BlockBehaviour.Properties.of().noOcclusion()));
+
+      public static final RegistryObject<Block> SCIENTISTS_EXPERIMENTAL_PLATFORM =
+            registryBlock("scientists_experimental_platform", () ->new Scientists_Experimental_Platform(BlockBehaviour.Properties.of().noOcclusion()));
 
 
 
