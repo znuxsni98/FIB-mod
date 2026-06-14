@@ -5,7 +5,16 @@
 
   "block.fib_mod.ice_maker": "制冰机",
   "block.fib_mod.radio_station": "电台",
+  "block.fib_mod.engineer_workbench": "工程师工作台",
+  "block.fib_mod.scientists_experimental_platform": "科学家实验台",
+  "block.fib_mod.bowl_block": "碗",
 
   "entity.minecraft.villager.fib_mod.tacz_merchantr": "军火商",
-  "entity.minecraft.villager.fib_mod.rs_merchantr": "RS商人"
+  "entity.minecraft.villager.fib_mod.we_merchantr": "工程师",
+  "entity.minecraft.villager.fib_mod.rs_merchantr": "RS商人",
+  "entity.minecraft.villager.fib_mod.sep_merchantr": "科学家",
+  "entity.minecraft.villager.fib_mod.bb_merchantr": "乞丐",
+  "entity.minecraft.villager.fib_mod.st_merchantr": "医生",
+  "entity.minecraft.villager.fib_mod.pc_merchantr": "血肉学者",
+  "entity.minecraft.villager.fib_mod.tm_merchantr": "票务员"
 }

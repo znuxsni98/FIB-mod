@@ -3,9 +3,18 @@
 
   "item.fib_mod.fib_logo_mod": "FIB-LOGO",
 
-  "block.fib_mod.ice_maker": "ice_maker",
-  "block.fib_mod.radio_station": "radio_station",
+  "block.fib_mod.ice_maker": "ice maker",
+  "block.fib_mod.radio_station": "radio station",
+  "block.fib_mod.engineer_workbench": "engineer workbench",
+  "block.fib_mod.scientists_experimental_platform": "scientists experimental platform",
+  "block.fib_mod.bowl_block": "bowl",
 
-  "entity.minecraft.villager.fib_mod.tacz_merchantr": "arms dealer",
-  "entity.minecraft.villager.fib_mod.rs_merchantr": "RS merchantr"
+  "entity.minecraft.villager.fib_mod.tacz_merchantr": "Arms dealer",
+  "entity.minecraft.villager.fib_mod.we_merchantr": "Engineer",
+  "entity.minecraft.villager.fib_mod.rs_merchantr": "RS merchantr",
+  "entity.minecraft.villager.fib_mod.sep_merchantr": "Scientist",
+  "entity.minecraft.villager.fib_mod.bb_merchantr": "Beggar",
+  "entity.minecraft.villager.fib_mod.st_merchantr": "Doctor",
+  "entity.minecraft.villager.fib_mod.pc_merchantr": "Flesh and blood scholar",
+  "entity.minecraft.villager.fib_mod.tm_merchantr": "Ticket agent"
 }

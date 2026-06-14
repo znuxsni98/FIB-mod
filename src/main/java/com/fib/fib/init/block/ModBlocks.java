@@ -22,8 +22,7 @@ public class ModBlocks {
             DeferredRegister.create(ForgeRegistries.BLOCKS, FIBMod.MOD_ID);
     //方块注册
 
-//    public static final RegistryObject<Block> ZC  =
-//            registryBlock("zcm", () -> new Block(BlockBehaviour.Properties.of()));
+
 
       public static final RegistryObject<Block> ICE_MAKER =
               registryBlock("ice_maker", () -> new Block(BlockBehaviour.Properties.of().noOcclusion()));
