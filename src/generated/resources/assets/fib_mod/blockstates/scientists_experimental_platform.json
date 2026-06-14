@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "fib_mod:block/scientists_experimental_platform",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "fib_mod:block/scientists_experimental_platform"
+    },
+    "facing=south": {
+      "model": "fib_mod:block/scientists_experimental_platform",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "fib_mod:block/scientists_experimental_platform",
+      "y": 270
+    }
+  }
+}

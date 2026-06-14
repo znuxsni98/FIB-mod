@@ -1,5 +1,6 @@
 package com.fib.fib;
 
+import com.fib.fib.init.ModBlockEntities;
 import com.fib.fib.init.Villager.ModVillager;
 import com.fib.fib.init.block.ModBlocks;
 import com.fib.fib.init.item.ModCreativeModeTabs;
@@ -37,6 +38,7 @@ public class FIBMod {
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
+        ModBlockEntities.register(modEventBus);
 
         ModVillager.register(modEventBus);
 

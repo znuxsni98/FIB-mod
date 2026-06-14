@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "fib_mod:item/fib_logo_mod"
+  }
+}

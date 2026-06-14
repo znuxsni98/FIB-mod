@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "fib_mod:block/radio_station",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "fib_mod:block/radio_station"
+    },
+    "facing=south": {
+      "model": "fib_mod:block/radio_station",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "fib_mod:block/radio_station",
+      "y": 270
+    }
+  }
+}
