@@ -1,6 +1,8 @@
 package com.fib.fib.init.trade;
 
 import com.fib.fib.FIBMod;
+import com.fib.fib.init.Villager.ModVillager;
+import com.fib.fib.util.FIBUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
@@ -8,6 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraftforge.event.village.VillagerTradesEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -52,7 +55,7 @@ public class TACZ {
 */
     @SubscribeEvent
     public static void addTrades(VillagerTradesEvent event) {
-        if (!event.getType().equals(com.fib.fib.init.Villager.ModVillager.TACZ_MAKER.get())) return;
+        if (!event.getType().equals(ModVillager.VILLAGERS.get(ModVillager.TACZ).profession().get())) return;
         Int2ObjectMap<List<VillagerTrades.ItemListing>> tierTradePool = event.getTrades();
 
         String[][] tradeConfigs = {
@@ -143,9 +146,9 @@ public class TACZ {
             String sell1Id = cfg[SELL1_ID_IDX];
             String sell1Snbt = cfg[SELL1_SNBT_IDX];
 
-            Item buy1Item = getItemFromID(buy1Id);
-            Item sell1Item = getItemFromID(sell1Id);
-            if (buy1Item == null || sell1Item == null) continue;
+            Item buy1Item = FIBUtils.getItemById(buy1Id).orElse(Items.AIR);
+            Item sell1Item = FIBUtils.getItemById(sell1Id).orElse(Items.AIR);
+            if (buy1Item == Items.AIR || sell1Item == Items.AIR) continue;
 
             List<VillagerTrades.ItemListing> pool = tierTradePool.get(tier);
             if (pool == null) continue;
@@ -154,8 +157,8 @@ public class TACZ {
                 ItemStack costA = buildStack(buy1Item, buy1Cnt, buy1Snbt);
                 ItemStack costB = ItemStack.EMPTY;
                 if (!"F".equals(buy2Id)) {
-                    Item buy2Item = getItemFromID(buy2Id);
-                    if (buy2Item != null) {
+                    Item buy2Item = FIBUtils.getItemById(buy2Id).orElse(Items.AIR);
+                    if (buy2Item != Items.AIR) {
                         costB = buildStack(buy2Item, buy2Cnt, buy2Snbt);
                     }
                 }
@@ -176,10 +179,4 @@ public class TACZ {
         return stack;
     }
 
-    public static @Nullable Item getItemFromID(String itemId) {
-        if ("F".equals(itemId)) return null;
-        ResourceLocation loc = ResourceLocation.tryParse(itemId);
-        if (loc == null) return null;
-        return ForgeRegistries.ITEMS.getValue(loc);
-    }
 }

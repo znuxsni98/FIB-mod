@@ -1,9 +1,8 @@
 package com.fib.fib.init.Villager;
 
 import com.fib.fib.FIBMod;
-import com.fib.fib.init.block.ModBlocks;
+import com.fib.fib.util.FIBUtils;
 import com.google.common.collect.ImmutableSet;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.ai.village.poi.PoiType;
 import net.minecraft.world.entity.npc.VillagerProfession;
@@ -14,105 +13,58 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ModVillager {
-    public static final DeferredRegister<PoiType> POI_TYPES =
-            DeferredRegister.create(ForgeRegistries.POI_TYPES, FIBMod.MOD_ID);
 
-    public static final DeferredRegister<VillagerProfession> VILLAGER_PROFESSIONS =
-            DeferredRegister.create(ForgeRegistries.VILLAGER_PROFESSIONS, FIBMod.MOD_ID);
-
-//注册村民
-
-//军火商
-    public static final RegistryObject<PoiType> TACZ_POI = POI_TYPES.register("tacz_poi",
-            () -> new PoiType(ImmutableSet.copyOf(getBlockById("tacz:gun_smith_table").orElse(Blocks.BARRIER).getStateDefinition().getPossibleStates()),1,2));
-
-    public static final RegistryObject<VillagerProfession> TACZ_MAKER = VILLAGER_PROFESSIONS.register("tacz_merchantr",
-            () -> new VillagerProfession("tacz_merchantr",
-                    p -> p.get() == TACZ_POI.get(), p -> p.get() == TACZ_POI.get(),
-                    ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_ARMORER));
-
-//RS
-    public static final RegistryObject<PoiType> RS_POI = POI_TYPES.register("rs_poi",
-        () -> new PoiType(ImmutableSet.copyOf(getBlockById("refinedstorage:controller").orElse(Blocks.BARRIER).getStateDefinition().getPossibleStates()),1,2));
-
-    public static final RegistryObject<VillagerProfession> RS_MAKER = VILLAGER_PROFESSIONS.register("rs_merchantr",
-            () -> new VillagerProfession("rs_merchantr",
-                    p -> p.get() == RS_POI.get(), p -> p.get() == RS_POI.get(),
-                    ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_ARMORER));
-
-//工程师
-    public static final RegistryObject<PoiType> EW_POI = POI_TYPES.register("ew_poi",
-            () -> new PoiType(ImmutableSet.copyOf(ModBlocks.ENGINEER_WORKBENCH.get().getStateDefinition().getPossibleStates()),1,2));
-
-    public static final RegistryObject<VillagerProfession> ENGINEER_WORKBENCH_MAKER = VILLAGER_PROFESSIONS.register("ew_merchantr",
-            () -> new VillagerProfession("ew_merchantr",
-                    p -> p.get() == EW_POI.get(), p -> p.get() == EW_POI.get(),
-                    ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_ARMORER));
-
-//科学家
-    public static final RegistryObject<PoiType> SEP_POI = POI_TYPES.register("sep_poi",
-            () -> new PoiType(ImmutableSet.copyOf(ModBlocks.SCIENTISTS_EXPERIMENTAL_PLATFORM.get().getStateDefinition().getPossibleStates()),1,2));
-
-    public static final RegistryObject<VillagerProfession> SCIENTISTS_EXPERIMENTAL_PLATFORM_MAKER = VILLAGER_PROFESSIONS.register("sep_merchantr",
-            () -> new VillagerProfession("sep_merchantr",
-                    p -> p.get() == SEP_POI.get(), p -> p.get() == SEP_POI.get(),
-                    ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_ARMORER));
-
-//乞丐
-    public static final RegistryObject<PoiType> BB_POI = POI_TYPES.register("bb_poi",
-            () -> new PoiType(ImmutableSet.copyOf(ModBlocks.BOWL_BLOCK.get().getStateDefinition().getPossibleStates()),1,2));
-
-    public static final RegistryObject<VillagerProfession> BEGGAR_MAKER = VILLAGER_PROFESSIONS.register("bb_merchantr",
-            () -> new VillagerProfession("bb_merchantr",
-                    p -> p.get() == BB_POI.get(), p -> p.get() == BB_POI.get(),
-                    ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_ARMORER));
-
-//医生
-    public static final RegistryObject<PoiType> ST_POI = POI_TYPES.register("st_poi",
-            () -> new PoiType(ImmutableSet.copyOf(getBlockById("spore:surgery_table").orElse(Blocks.BARRIER).getStateDefinition().getPossibleStates()),1,2));
-
-    public static final RegistryObject<VillagerProfession> DOCTOR_MAKER = VILLAGER_PROFESSIONS.register("st_merchantr",
-            () -> new VillagerProfession("st_merchantr",
-                    p -> p.get() == ST_POI.get(), p -> p.get() == ST_POI.get(),
-                    ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_ARMORER));
-
-//血肉学者
-    public static final RegistryObject<PoiType> PC_POI = POI_TYPES.register("pc_poi",
-            () -> new PoiType(ImmutableSet.copyOf(getBlockById("biomancy:primordial_cradle").orElse(Blocks.BARRIER).getStateDefinition().getPossibleStates()),1,2));
-
-    public static final RegistryObject<VillagerProfession> FLESHANDBLOODSCHOLAR_MAKER = VILLAGER_PROFESSIONS.register("pc_merchantr",
-            () -> new VillagerProfession("pc_merchantr",
-                    p -> p.get() == PC_POI.get(), p -> p.get() == PC_POI.get(),
-                    ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_ARMORER));
-
-//票务员
-    public static final RegistryObject<PoiType> TM_POI = POI_TYPES.register("tm_poi",
-            () -> new PoiType(ImmutableSet.copyOf(getBlockById("lightmanscurrency:ticket_machine").orElse(Blocks.BARRIER).getStateDefinition().getPossibleStates()),1,2));
-
-    public static final RegistryObject<VillagerProfession> TICKETAGENT_MAKER = VILLAGER_PROFESSIONS.register("tm_merchantr",
-            () -> new VillagerProfession("tm_merchantr",
-                    p -> p.get() == TM_POI.get(), p -> p.get() == TM_POI.get(),
-                    ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_ARMORER));
+    public static final DeferredRegister<PoiType> POI_TYPES = DeferredRegister.create(ForgeRegistries.POI_TYPES, FIBMod.MOD_ID);
+    public static final DeferredRegister<VillagerProfession> VILLAGER_PROFESSIONS = DeferredRegister.create(ForgeRegistries.VILLAGER_PROFESSIONS, FIBMod.MOD_ID);
 
 
+    public static final Map<String, RegEntry> VILLAGERS = new HashMap<>();
+    public static final String TACZ = "tacz";
+    public static final String RS = "rs";
+    public static final String ENGINEER = "ew";
+    public static final String SCIENTIST = "sep";
+    public static final String BEGGAR = "bb";
+    public static final String DOCTOR = "st";
+    public static final String FLESH_SCHOLAR = "pc";
+    public static final String TICKET_AGENT = "tm";
 
-
-
-
+    // Key, 工作方块ID, 兜底工作方块
+    private static final Map<String, ProfessionData> DEF_MAP = Map.of(
+            TACZ,          new ProfessionData("tacz:gun_smith_table",                      Blocks.WHITE_WOOL),
+            RS,            new ProfessionData("refinedstorage:controller",                 Blocks.ORANGE_WOOL),
+            ENGINEER,      new ProfessionData("fib_mod:engineer_workbench",                Blocks.MAGENTA_WOOL),
+            SCIENTIST,     new ProfessionData("fib_mod:scientists_experimental_platform",  Blocks.LIGHT_BLUE_WOOL),
+            BEGGAR,        new ProfessionData("fib_mod:bowl_block",                        Blocks.YELLOW_WOOL),
+            DOCTOR,        new ProfessionData("spore:surgery_table",                       Blocks.LIME_WOOL),
+            FLESH_SCHOLAR, new ProfessionData("biomancy:primordial_cradle",                Blocks.PINK_WOOL),
+            TICKET_AGENT,  new ProfessionData("lightmanscurrency:ticket_machine",          Blocks.GRAY_WOOL)
+    );
 
     public static void register(IEventBus eventBus) {
+        DEF_MAP.forEach((name, data) -> {
+            RegistryObject<PoiType> poi = POI_TYPES.register(name + "_poi", () -> {
+                Block block = FIBUtils.getBlockById(data.targetId).orElse(data.fallback);
+                return new PoiType(ImmutableSet.copyOf(block.getStateDefinition().getPossibleStates()), 1, 1);
+            });
+
+            RegistryObject<VillagerProfession> profession = VILLAGER_PROFESSIONS.register(name + "_merchantr", () ->
+                    new VillagerProfession(name + "_merchantr",
+                            h -> h.value() == poi.get(), h -> h.value() == poi.get(),
+                            ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_ARMORER)
+            );
+
+            VILLAGERS.put(name, new RegEntry(poi, profession));
+        });
+
         POI_TYPES.register(eventBus);
-        VILLAGER_PROFESSIONS.register((eventBus));
+        VILLAGER_PROFESSIONS.register(eventBus);
     }
 
-    public static Optional<Block> getBlockById(String blockId) {
-        ResourceLocation location = ResourceLocation.tryParse(blockId);
-        if (location == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(ForgeRegistries.BLOCKS.getValue(location));
-    }
+
+    private record ProfessionData(String targetId, Block fallback) {}
+    public record RegEntry(RegistryObject<PoiType> poi, RegistryObject<VillagerProfession> profession) {}
 }

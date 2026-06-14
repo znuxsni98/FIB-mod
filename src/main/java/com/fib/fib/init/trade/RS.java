@@ -2,6 +2,7 @@ package com.fib.fib.init.trade;
 
 import com.fib.fib.FIBMod;
 import com.fib.fib.init.Villager.ModVillager;
+import com.fib.fib.util.FIBUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
@@ -25,7 +26,7 @@ public class RS {
 
     @SubscribeEvent
     public static void addTrades(VillagerTradesEvent event) {
-        if (!event.getType().equals(ModVillager.RS_MAKER.get())) return;
+        if (!event.getType().equals(ModVillager.VILLAGERS.get(ModVillager.RS).profession().get())) return;
         Int2ObjectMap<List<VillagerTrades.ItemListing>> tierTradePool = event.getTrades();
 
         String[][] tradeConfigs = {
@@ -51,10 +52,8 @@ public class RS {
             String baseItemId = config[BASE_ITEM_IDX];
             String attachNbtData = config[ATTACH_NBT_IDX];
 
-            Item tradeBaseItem = getItemFromID(baseItemId);
-            if (tradeBaseItem == null) {
-                continue;
-            }
+            Item tradeBaseItem = FIBUtils.getItemById(baseItemId).orElse(Items.AIR);
+            if (tradeBaseItem == Items.AIR) continue;
 
             List<VillagerTrades.ItemListing> tradePool = tierTradePool.get(tier);
             if (tradePool == null) continue;
@@ -92,11 +91,6 @@ public class RS {
 
     private static final float PRICE_MULTIPLIER = 0.4F;
 
-    public static @Nullable Item getItemFromID(String itemId) {
-        ResourceLocation location = ResourceLocation.tryParse(itemId);
-        if (location == null) return null;
-        return ForgeRegistries.ITEMS.getValue(location);
-    }
 
     private static ItemStack buildTradeItem(Item baseItem, String fullNbtStr, boolean addAttachNbt) {
         ItemStack stack = new ItemStack(baseItem);
