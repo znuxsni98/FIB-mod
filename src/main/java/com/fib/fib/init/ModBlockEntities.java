@@ -1,6 +1,7 @@
 package com.fib.fib.init;
 
 import com.fib.fib.FIBMod;
+import com.fib.fib.blockentity.Radio_StationBlockEntity;
 import com.fib.fib.init.block.ModBlocks;
 import com.fib.fib.blockentity.IceMakerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -23,6 +24,16 @@ public class ModBlockEntities {
                     BlockEntityType.Builder.of(
                             IceMakerBlockEntity::new,
                             ModBlocks.ICE_MAKER.get()
+                    ).build(null)
+            );
+
+    public static final RegistryObject<BlockEntityType<Radio_StationBlockEntity>>
+            RADIO_STATION_BE =
+            BLOCK_ENTITIES.register("radio_station_be", () ->
+
+                    BlockEntityType.Builder.of(
+                            Radio_StationBlockEntity::new,
+                            ModBlocks.RADIO_STATION.get()
                     ).build(null)
             );
 
