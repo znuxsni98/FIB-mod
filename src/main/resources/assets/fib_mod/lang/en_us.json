@@ -16,5 +16,8 @@
   "entity.minecraft.villager.fib_mod.bb_merchantr": "Beggar",
   "entity.minecraft.villager.fib_mod.st_merchantr": "Doctor",
   "entity.minecraft.villager.fib_mod.pc_merchantr": "Flesh and blood scholar",
-  "entity.minecraft.villager.fib_mod.tm_merchantr": "Ticket agent"
+  "entity.minecraft.villager.fib_mod.tm_merchantr": "Ticket agent",
+
+
+  "be.title.ice_maker": "ice_maker"
 }

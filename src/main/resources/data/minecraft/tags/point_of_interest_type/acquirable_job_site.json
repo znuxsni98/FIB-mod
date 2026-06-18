@@ -3,11 +3,11 @@
   "values": [
     "fib_mod:tacz_poi",
     "fib_mod:rs_poi",
-    "fib_mod:bb_poi",
-    "fib_mod:ew_poi",
-    "fib_mod:sep_poi",
-    "fib_mod:pc_poi",
-    "fib_mod:tm_poi",
-    "fib_mod:st_poi"
+    "fib_mod:beggar_poi",
+    "fib_mod:engineer_poi",
+    "fib_mod:scientists_poi",
+    "fib_mod:flesh_scholar_poi",
+    "fib_mod:ticket_agent_poi",
+    "fib_mod:doctor_poi"
   ]
 }

@@ -5,40 +5,87 @@ import com.fib.fib.init.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemStackHandler;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class IceMakerBlockEntity extends BlockEntity implements MenuProvider {
 
-    /**
-     * 一个教学用的示例字段。
-     *
-     * progress 在本章并不代表真实机器逻辑，
-     * 它只是一个“计数器”，用于验证：
-     * BlockEntity 是否在 tick
-     * 数据是否能被保存
-     * 数据是否能在重进世界后恢复
-     */
+
+
     private int progress = 0;
+    // 输入槽索引
+    private static final int INPUT_SLOT = 0;
+    // 输入槽索引-流体
+    private static final int INPUT_SLOT_FLUID = 1;
+    // 输出槽索引
+    private static final int OUTPUT_SLOT = 2;
+    // 输出槽索引-流体
+    private static final int OUTPUT_SLOT_FLUID = 3;
 
     /**
-     * 用于 Menu 与客户端同步数据的容器。
-     *
-     * ContainerData 的作用是把 BlockEntity 中的整数数据
-     * 暴露给 Menu 系统，从而在客户端与服务端之间自动同步。
-     *
-     * 在本例中我们只同步一个字段：
-     * index = 0  → progress
-     *
-     * 如果以后需要同步更多数据（例如最大进度、能量等），
-     * 只需要增加新的 index 即可。
+     * 这里使用 Forge 提供的 ItemStackHandler 作为库存实现。
+     * 当前机器一共拥有两个槽位：
+     * 0 -> 输入槽
+     * 1 -> 输出槽
      */
+    private final ItemStackHandler itemHandler = new ItemStackHandler(4) {
+
+        /**
+         * 当某个槽位内容发生变化时调用。
+         *
+         * 这里调用 setChanged()，告诉游戏：
+         * 当前 BlockEntity 的数据已经发生修改，需要被标记为“已更改”，
+         * 这样世界保存时才会把新数据写入存档。
+         */
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+        }
+
+        /**
+         * 控制某个槽位是否允许放入指定物品。
+         *
+         * 当前实现中：
+         * 输入槽允许放入物品
+         * 输出槽不允许手动放入物品
+         *
+         * 这正符合大多数机器的常见逻辑：
+         * 玩家把原料放进输入槽而非输出槽，产物只会出现在输出槽。
+         */
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return slot == INPUT_SLOT;
+        }
+    };
+
+
+     //将当前机器内部的所有物品掉落到世界中。
+    public void drops() {
+        // 创建一个临时容器，大小与机器槽位数量一致
+        SimpleContainer inventory = new SimpleContainer(itemHandler.getSlots());
+
+        // 将 itemHandler 中的每个槽位内容复制到临时容器中
+        for (int i = 0; i < itemHandler.getSlots(); i++) {
+            inventory.setItem(i, itemHandler.getStackInSlot(i));
+        }
+
+        // 将容器中的物品掉落到世界
+        Containers.dropContents(this.level, this.worldPosition, inventory);
+    }
+
+
     protected final ContainerData data = new ContainerData() {
 
         /**
@@ -129,6 +176,9 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     protected void saveAdditional(CompoundTag pTag) {
         super.saveAdditional(pTag);
+        // 将内部物品栏序列化后写入 NBT
+        // "inventory" 是这一组库存数据在存档中的键名
+        pTag.put("inventory", itemHandler.serializeNBT());
 
         // 将 progress 写入 NBT
         pTag.putInt("Progress", progress);
@@ -143,6 +193,9 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     public void load(CompoundTag pTag) {
         super.load(pTag);
+        // 从 NBT 中读取库存数据并恢复到 itemHandler
+        // 键名必须与 saveAdditional 中保持一致
+        itemHandler.deserializeNBT(pTag.getCompound("inventory"));
 
         // 从 NBT 中读取 progress
         progress = pTag.getInt("Progress");
@@ -176,5 +229,15 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
         return new IceMakerMenu(id, inventory, this, data);
+    }
+
+    /**
+     * 返回当前机器内部的物品处理器。
+     *
+     * Menu 会通过这个方法获取库存，
+     * 再基于它创建真正的 GUI 槽位。
+     */
+    public IItemHandler getItemHandler() {
+        return itemHandler;
     }
 }

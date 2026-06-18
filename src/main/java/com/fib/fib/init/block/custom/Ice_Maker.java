@@ -74,6 +74,7 @@ public class Ice_Maker extends Block implements EntityBlock {
 
 
 
+
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos blockPos, BlockState blockState) {
@@ -101,11 +102,7 @@ public class Ice_Maker extends Block implements EntityBlock {
                                  BlockPos pos, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
 
-        // 方块被玩家右键时调用。
-        // 这里我们用它作为打开 GUI 的入口。
-
-        // GUI 必须由服务端发起，因此只在服务端执行打开逻辑。
-        // 客户端只负责渲染界面，不负责创建 Menu。
+        // 方块被玩家右键时打开 GUI 的入口
         if (!level.isClientSide()) {
 
             // 获取当前位置绑定的 BlockEntity
@@ -134,6 +131,25 @@ public class Ice_Maker extends Block implements EntityBlock {
         // sidedSuccess 会在客户端和服务端分别返回正确的结果，
         // 保证交互逻辑在两端保持一致。
         return InteractionResult.sidedSuccess(level.isClientSide());
+    }
+
+    @Override
+    public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving) {
+
+        // 旧方块与新方块不是同一个方块，时说明当前方块被替换/破坏了
+        if (pState.getBlock() != pNewState.getBlock()) {
+
+            // 取出当前位置的 BlockEntity
+            BlockEntity blockEntity = pLevel.getBlockEntity(pPos);
+
+            // 如果它确实是该方块的 BE，就执行掉落逻辑
+            if (blockEntity instanceof IceMakerBlockEntity industrialProcessingUnit) {
+                industrialProcessingUnit.drops();
+            }
+        }
+
+        // 保留父类逻辑
+        super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
     }
 }
 

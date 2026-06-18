@@ -25,12 +25,12 @@ public class ModVillager {
     public static final Map<String, RegEntry> VILLAGERS = new HashMap<>();
     public static final String TACZ = "tacz";
     public static final String RS = "rs";
-    public static final String ENGINEER = "ew";
-    public static final String SCIENTIST = "sep";
-    public static final String BEGGAR = "bb";
-    public static final String DOCTOR = "st";
-    public static final String FLESH_SCHOLAR = "pc";
-    public static final String TICKET_AGENT = "tm";
+    public static final String ENGINEER = "engineer";
+    public static final String SCIENTIST = "scientists";
+    public static final String BEGGAR = "beggar";
+    public static final String DOCTOR = "doctor";
+    public static final String FLESH_SCHOLAR = "flesh_scholar";
+    public static final String TICKET_AGENT = "ticket_agent";
 
     // Key, 工作方块ID, 兜底工作方块
     private static final Map<String, ProfessionData> DEF_MAP = Map.of(

@@ -14,12 +14,12 @@ public class IceMakerScreen extends AbstractContainerScreen<IceMakerMenu> {
 
 
     private static final ResourceLocation GUI =
-            new ResourceLocation(FIBMod.MOD_ID, "textures/container/ice_maker.png");
+            new ResourceLocation(FIBMod.MOD_ID, "textures/container/ice_maker_gui.png");
 
 
     public IceMakerScreen(IceMakerMenu menu,
-                                          Inventory playerInventory,
-                                          Component title) {
+        Inventory playerInventory,
+        Component title) {
         super(menu, playerInventory, title);
 
         // GUI 的宽度与高度（像素）
@@ -28,12 +28,20 @@ public class IceMakerScreen extends AbstractContainerScreen<IceMakerMenu> {
         this.imageHeight = 166;
     }
 
-    /**
-     * 渲染 GUI 背景。
-     *
-     * 该方法负责绘制界面的底层贴图。
-     * 在这里我们只绘制一张固定的 GUI 背景图。
-     */
+
+    @Override
+    protected void init() {
+        super.init();
+        // 物品栏标题位置
+        this.inventoryLabelX = 7;
+        this.inventoryLabelY = 72;
+        // GUI标题位置
+        this.titleLabelX = 7;
+        this.titleLabelY = 4;
+    }
+
+
+    //渲染 GUI 背景。
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
 
@@ -68,5 +76,8 @@ public class IceMakerScreen extends AbstractContainerScreen<IceMakerMenu> {
 
         // 调用父类渲染 GUI 元素
         super.render(graphics, mouseX, mouseY, partialTick);
+
+        // 渲染鼠标悬停在物品上的提示信息
+        renderTooltip(graphics, mouseX, mouseY);
     }
 }
