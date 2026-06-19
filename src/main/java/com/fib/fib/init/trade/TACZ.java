@@ -189,7 +189,7 @@ public class TACZ {
                         "5", "16", "20",
                         "lightmanscurrency:coin_gold", "F", "3",
                         "F", "F", "0",
-                        "tacz:ammo", "{AmmoId:\"tacz_unidict:shiper\"}", "2"
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:sniper\"}", "2"
                 },
                 {
                         "5", "16", "20",
@@ -205,7 +205,7 @@ public class TACZ {
                 },
                 {
                         "5", "16", "20",
-                        "tacz:ammo", "{AmmoId:\"tacz_unidict:shiper\"}", "8",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:sniper\"}", "8",
                         "F", "F", "0",
                         "lightmanscurrency:coin_gold", "F", "2"
                 }
