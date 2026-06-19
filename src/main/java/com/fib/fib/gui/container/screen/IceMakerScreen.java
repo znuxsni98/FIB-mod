@@ -1,7 +1,7 @@
-package com.fib.fib.container.screen;
+package com.fib.fib.gui.container.screen;
 
 import com.fib.fib.FIBMod;
-import com.fib.fib.container.menu.IceMakerMenu;
+import com.fib.fib.gui.container.menu.IceMakerMenu;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;

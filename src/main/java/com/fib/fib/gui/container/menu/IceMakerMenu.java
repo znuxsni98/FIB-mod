@@ -1,4 +1,4 @@
-package com.fib.fib.container.menu;
+package com.fib.fib.gui.container.menu;
 
 import com.fib.fib.blockentity.IceMakerBlockEntity;
 import com.fib.fib.init.ModMenuTypes;

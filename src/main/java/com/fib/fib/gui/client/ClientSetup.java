@@ -1,8 +1,8 @@
-package com.fib.fib.client;
+package com.fib.fib.gui.client;
 
 import com.fib.fib.FIBMod;
 import com.fib.fib.init.ModMenuTypes;
-import com.fib.fib.container.screen.IceMakerScreen;
+import com.fib.fib.gui.container.screen.IceMakerScreen;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;

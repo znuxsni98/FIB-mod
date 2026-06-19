@@ -1,6 +1,6 @@
 package com.fib.fib.blockentity;
 
-import com.fib.fib.container.menu.IceMakerMenu;
+import com.fib.fib.gui.container.menu.IceMakerMenu;
 import com.fib.fib.init.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -34,12 +34,7 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider {
     // 输出槽索引-流体
     private static final int OUTPUT_SLOT_FLUID = 3;
 
-    /**
-     * 这里使用 Forge 提供的 ItemStackHandler 作为库存实现。
-     * 当前机器一共拥有两个槽位：
-     * 0 -> 输入槽
-     * 1 -> 输出槽
-     */
+
     private final ItemStackHandler itemHandler = new ItemStackHandler(4) {
 
         /**
@@ -66,7 +61,7 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider {
          */
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack stack) {
-            return slot == INPUT_SLOT;
+            return slot == INPUT_SLOT || slot == INPUT_SLOT_FLUID;
         }
     };
 
@@ -157,12 +152,7 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider {
         setChanged();
     }
 
-    /**
-     * 对外提供当前进度值。
-     *
-     * 目前我们还没有使用到它。
-     * 但在后续 GUI 章节中，界面会通过这种 getter 方法读取数据。
-     */
+
     public int getProgress() {
         return progress;
     }
