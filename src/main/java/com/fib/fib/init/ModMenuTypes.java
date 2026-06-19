@@ -1,7 +1,7 @@
 package com.fib.fib.init;
 
 import com.fib.fib.FIBMod;
-import com.fib.fib.container.menu.IceMakerMenu;
+import com.fib.fib.gui.container.menu.IceMakerMenu;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;

@@ -9,14 +9,14 @@
   "block.fib_mod.scientists_experimental_platform": "scientists experimental platform",
   "block.fib_mod.bowl_block": "bowl",
 
-  "entity.minecraft.villager.fib_mod.tacz_merchantr": "Arms dealer",
-  "entity.minecraft.villager.fib_mod.we_merchantr": "Engineer",
-  "entity.minecraft.villager.fib_mod.rs_merchantr": "RS merchantr",
-  "entity.minecraft.villager.fib_mod.sep_merchantr": "Scientist",
-  "entity.minecraft.villager.fib_mod.bb_merchantr": "Beggar",
-  "entity.minecraft.villager.fib_mod.st_merchantr": "Doctor",
-  "entity.minecraft.villager.fib_mod.pc_merchantr": "Flesh and blood scholar",
-  "entity.minecraft.villager.fib_mod.tm_merchantr": "Ticket agent",
+  "entity.minecraft.villager.fib_mod.tacz_merchant": "Arms dealer",
+  "entity.minecraft.villager.fib_mod.engineer_merchant": "Engineer",
+  "entity.minecraft.villager.fib_mod.rs_merchant": "RS merchant",
+  "entity.minecraft.villager.fib_mod.scientist_merchant": "Scientist",
+  "entity.minecraft.villager.fib_mod.beggar_merchant": "Beggar",
+  "entity.minecraft.villager.fib_mod.doctor_merchant": "Doctor",
+  "entity.minecraft.villager.fib_mod.flesh_scholar_merchant": "Flesh and blood scholar",
+  "entity.minecraft.villager.fib_mod.ticket_agent_merchant": "Ticket agent",
 
 
   "be.title.ice_maker": "ice_maker"

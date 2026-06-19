@@ -51,8 +51,8 @@ public class ModVillager {
                 return new PoiType(ImmutableSet.copyOf(block.getStateDefinition().getPossibleStates()), 1, 1);
             });
 
-            RegistryObject<VillagerProfession> profession = VILLAGER_PROFESSIONS.register(name + "_merchantr", () ->
-                    new VillagerProfession(name + "_merchantr",
+            RegistryObject<VillagerProfession> profession = VILLAGER_PROFESSIONS.register(name + "_merchant", () ->
+                    new VillagerProfession(name + "_merchant",
                             h -> h.value() == poi.get(), h -> h.value() == poi.get(),
                             ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_ARMORER)
             );
