@@ -1,6 +1,7 @@
 package com.fib.fib.gui.client;
 
 import com.fib.fib.FIBMod;
+import com.fib.fib.gui.container.screen.CrateScreen;
 import com.fib.fib.init.ModMenuTypes;
 import com.fib.fib.gui.container.screen.IceMakerScreen;
 import net.minecraft.client.gui.screens.MenuScreens;
@@ -51,6 +52,10 @@ public class ClientSetup {
                 ModMenuTypes.ICE_MAKER_MENU.get(),
                 IceMakerScreen::new
         );
-    }
 
+        MenuScreens.register(
+                ModMenuTypes.CRATE_MENU.get(),
+                CrateScreen::new
+        );
+    }
 }

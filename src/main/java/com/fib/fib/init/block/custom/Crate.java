@@ -1,6 +1,7 @@
 package com.fib.fib.init.block.custom;
 
-import com.fib.fib.blockentity.IceMakerBlockEntity;
+
+import com.fib.fib.blockentity.CrateBlockEntity;
 import com.fib.fib.init.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -28,7 +29,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
-public class Ice_Maker extends Block implements EntityBlock {
+public class Crate extends Block implements EntityBlock {
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
@@ -36,7 +37,7 @@ public class Ice_Maker extends Block implements EntityBlock {
     public static final VoxelShape SHAPE_W =Block.box(0, 0, 0, 16, 16, 16);
     public static final VoxelShape SHAPE_E =Block.box(0, 0, 0, 16, 16, 16);
     public static final VoxelShape SHAPE_N =Block.box(0, 0, 0, 16, 16, 16);
-    public Ice_Maker(Properties pProperties) {
+    public Crate(Properties pProperties) {
         super(pProperties);
         this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH));
     }
@@ -78,7 +79,7 @@ public class Ice_Maker extends Block implements EntityBlock {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos blockPos, BlockState blockState) {
-        return new IceMakerBlockEntity(blockPos, blockState);
+        return new CrateBlockEntity(blockPos, blockState);
     }
 
     @Nullable
@@ -89,9 +90,9 @@ public class Ice_Maker extends Block implements EntityBlock {
             BlockEntityType<T> pBlockEntityType) {
 
 
-        return pBlockEntityType == ModBlockEntities.ICE_MAKER_BE.get()
+        return pBlockEntityType == ModBlockEntities.CRATE_BE.get()
                 ? (lvl, pos, state, be) ->
-                ((IceMakerBlockEntity) be).tick()
+                ((CrateBlockEntity) be).tick()
                 : null;
     }
 
@@ -109,7 +110,7 @@ public class Ice_Maker extends Block implements EntityBlock {
             BlockEntity entity = level.getBlockEntity(pos);
 
             // 确认该实体确实是正确方块
-            if (entity instanceof IceMakerBlockEntity juicer) {
+            if (entity instanceof CrateBlockEntity juicer) {
 
                 // 打开界面。
                 // NetworkHooks.openScreen 会：
@@ -143,8 +144,8 @@ public class Ice_Maker extends Block implements EntityBlock {
             BlockEntity blockEntity = pLevel.getBlockEntity(pPos);
 
             // 如果它确实是该方块的 BE，就执行掉落逻辑
-            if (blockEntity instanceof IceMakerBlockEntity IceMaker) {
-                IceMaker.drops();
+            if (blockEntity instanceof CrateBlockEntity Crate) {
+                Crate.drops();
             }
         }
 

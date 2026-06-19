@@ -1,6 +1,7 @@
 package com.fib.fib.init;
 
 import com.fib.fib.FIBMod;
+import com.fib.fib.gui.container.menu.CrateMenu;
 import com.fib.fib.gui.container.menu.IceMakerMenu;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
@@ -26,6 +27,14 @@ public class ModMenuTypes {
                     "ice_maker_menu",
                     IceMakerMenu::new
             );
+
+    public static final RegistryObject<MenuType<CrateMenu>>
+            CRATE_MENU =
+            registerMenuType(
+                    "crate_menu",
+                    CrateMenu::new
+            );
+
 
     //endregion
 

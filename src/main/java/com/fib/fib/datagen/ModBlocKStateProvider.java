@@ -19,10 +19,11 @@ public class ModBlocKStateProvider extends BlockStateProvider {
         //生成方块状态文件
 
         //BB模型
-        simpleBlockWithoutBlockModel(ModBlocks.ICE_MAKER);
         simpleBlockWithoutBlockModel(ModBlocks.BOWL_BLOCK);
+        simpleBlockWithoutBlockModel(ModBlocks.CRATE);
 
         //有朝向
+        customHorizontalBlock(ModBlocks.ICE_MAKER);
         customHorizontalBlock(ModBlocks.RADIO_STATION);
         customHorizontalBlock(ModBlocks.SCIENTISTS_EXPERIMENTAL_PLATFORM);
         customHorizontalBlock(ModBlocks.ENGINEER_WORKBENCH);

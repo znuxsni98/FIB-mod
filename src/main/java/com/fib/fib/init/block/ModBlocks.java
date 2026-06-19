@@ -19,16 +19,17 @@ public class ModBlocks {
             DeferredRegister.create(ForgeRegistries.BLOCKS, FIBMod.MOD_ID);
     //方块注册
 
-
+      public static final RegistryObject<Block> CRATE =
+            registryBlock("crate", () -> new Crate(BlockBehaviour.Properties.of()));
 
       public static final RegistryObject<Block> ICE_MAKER =
-              registryBlock("ice_maker", () -> new Ice_Maker(BlockBehaviour.Properties.of().noOcclusion()));
+              registryBlock("ice_maker", () -> new Ice_Maker(BlockBehaviour.Properties.of()));
 
       public static final RegistryObject<Block> RADIO_STATION =
               registryBlock("radio_station", () ->new Radio_Station(BlockBehaviour.Properties.of().noOcclusion()));
       
       public static final RegistryObject<Block> BOWL_BLOCK =
-            registryBlock("bowl_block", () ->new Bowl_Block(BlockBehaviour.Properties.of().noOcclusion()));
+            registryBlock("bowl_block", () ->new Bowl_Block(BlockBehaviour.Properties.of()));
 
       public static final RegistryObject<Block> ENGINEER_WORKBENCH =
             registryBlock("engineer_workbench", () ->new Engineer_Workbench(BlockBehaviour.Properties.of().noOcclusion()));

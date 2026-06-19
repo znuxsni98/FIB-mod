@@ -1,7 +1,19 @@
 {
   "variants": {
-    "": {
+    "facing=east": {
+      "model": "fib_mod:block/ice_maker",
+      "y": 90
+    },
+    "facing=north": {
       "model": "fib_mod:block/ice_maker"
+    },
+    "facing=south": {
+      "model": "fib_mod:block/ice_maker",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "fib_mod:block/ice_maker",
+      "y": 270
     }
   }
 }

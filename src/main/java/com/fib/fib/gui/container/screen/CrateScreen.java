@@ -1,7 +1,7 @@
 package com.fib.fib.gui.container.screen;
 
 import com.fib.fib.FIBMod;
-import com.fib.fib.gui.container.menu.IceMakerMenu;
+import com.fib.fib.gui.container.menu.CrateMenu;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -10,16 +10,16 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
-public class IceMakerScreen extends AbstractContainerScreen<IceMakerMenu> {
+public class CrateScreen extends AbstractContainerScreen<CrateMenu> {
 
 
     private static final ResourceLocation GUI =
-            new ResourceLocation(FIBMod.MOD_ID, "textures/container/ice_maker_gui.png");
+            new ResourceLocation(FIBMod.MOD_ID, "textures/container/crate_gui.png");
 
 
-    public IceMakerScreen(IceMakerMenu menu,
-        Inventory playerInventory,
-        Component title) {
+    public CrateScreen(CrateMenu menu,
+                       Inventory playerInventory,
+                       Component title) {
         super(menu, playerInventory, title);
 
         // GUI 的宽度与高度（像素）

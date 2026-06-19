@@ -21,6 +21,7 @@ public class ModBlocKLootTablesProvider extends BlockLootSubProvider {
       dropSelf(ModBlocks.SCIENTISTS_EXPERIMENTAL_PLATFORM.get());
       dropSelf(ModBlocks.BOWL_BLOCK.get());
       dropSelf(ModBlocks.ENGINEER_WORKBENCH.get());
+      dropSelf(ModBlocks.CRATE.get());
     }
 
     @Override

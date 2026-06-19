@@ -1,8 +1,8 @@
 package com.fib.fib.init;
 
 import com.fib.fib.FIBMod;
-//import com.fib.fib.blockentity.Radio_StationBlockEntity;
 import com.fib.fib.init.block.ModBlocks;
+import com.fib.fib.blockentity.CrateBlockEntity;
 import com.fib.fib.blockentity.IceMakerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -27,15 +27,17 @@ public class ModBlockEntities {
                     ).build(null)
             );
 
-//    public static final RegistryObject<BlockEntityType<Radio_StationBlockEntity>>
-//            RADIO_STATION_BE =
-//            BLOCK_ENTITIES.register("radio_station_be", () ->
-//
-//                    BlockEntityType.Builder.of(
-//                            Radio_StationBlockEntity::new,
-//                            ModBlocks.RADIO_STATION.get()
-//                    ).build(null)
-//            );
+    public static final RegistryObject<BlockEntityType<CrateBlockEntity>>
+            CRATE_BE =
+            BLOCK_ENTITIES.register("crate_be", () ->
+
+                    BlockEntityType.Builder.of(
+                            CrateBlockEntity::new,
+                            ModBlocks.CRATE.get()
+                    ).build(null)
+            );
+
+
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
