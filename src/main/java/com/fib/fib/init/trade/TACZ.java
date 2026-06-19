@@ -60,64 +60,154 @@ public class TACZ {
 
         String[][] tradeConfigs = {
                 {
-                        "1", "8", "1",
-                        "minecraft:emerald", "F", "1",
+                        "1", "8", "2",
+                        "lightmanscurrency:coin_iron", "F", "5",
                         "F", "F", "0",
                         "minecraft:gunpowder", "F", "8"
                 },
                 {
                         "1", "6", "2",
-                        "minecraft:copper_ingot", "F", "1",
+                        "minecraft:copper_ingot", "F", "4",
                         "F", "F", "0",
-                        "minecraft:emerald", "F", "1"
+                        "lightmanscurrency:coin_iron", "F", "5"
                 },
                 {
-                        "2", "8", "1",
-                        "minecraft:emerald", "F", "2",
+                        "2", "1", "40",
+                        "lightmanscurrency:coin_emerald", "F", "2",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:quenching\"}", "1"
                 },
                 {
-                        "2", "8", "1",
-                        "minecraft:emerald", "F", "2",
+                        "2", "1", "40",
+                        "lightmanscurrency:coin_emerald", "F", "2",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:shadowkiller\"}", "1"
                 },
                 {
-                        "2", "8", "1",
-                        "minecraft:emerald", "F", "2",
+                        "2", "1", "40",
+                        "lightmanscurrency:coin_emerald", "F", "2",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:silencefd\"}", "1"
                 },
                 {
-                        "2", "8", "1",
-                        "minecraft:emerald", "F", "2",
+                        "2", "1", "40",
+                        "lightmanscurrency:coin_emerald", "F", "2",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:polaris\"}", "1"
                 },
                 {
-                        "2", "8", "1",
-                        "minecraft:emerald", "F", "2",
+                        "2", "1", "40",
+                        "lightmanscurrency:coin_emerald", "F", "2",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:thieve_sea\"}", "1"
                 },
                 {
-                        "2", "8", "1",
-                        "minecraft:emerald", "F", "2",
+                        "2", "1", "40",
+                        "lightmanscurrency:coin_emerald", "F", "2",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:mercy\"}", "1"
                 },
                 {
-                        "2", "8", "1",
-                        "minecraft:emerald", "F", "2",
+                        "2", "1", "40",
+                        "lightmanscurrency:coin_emerald", "F", "2",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:cobra_vanguard\"}", "1"
                 },
                 {
-                        "2", "8", "1",
-                        "minecraft:emerald", "F", "2",
+                        "2", "1", "40",
+                        "lightmanscurrency:coin_emerald", "F", "2",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:treasure_kn\"}", "1"
+                },
+                {
+                        "3", "6", "10",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "lrtactical:throwable", "{ThrowableId:\"lrtactical:rgn\"}", "3"
+                },
+                {
+                        "3", "6", "10",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "lrtactical:throwable", "{ThrowableId:\"lrtactical:molotov\"}", "3"
+                },
+                {
+                        "3", "8", "8",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "fib:gunpowder", "F", "16"
+                },
+                {
+                        "4", "12", "10",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:rifle\"}", "8"
+                },
+                {
+                        "4", "16", "10",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:pistol\"}", "8"
+                },
+                {
+                        "4", "16", "10",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:shot\"}", "4"
+                },
+                {
+                        "4", "16", "10",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:rifle\"}", "24",
+                        "F", "F", "0",
+                        "lightmanscurrency:coin_gold", "F", "1"
+                },
+                {
+                        "4", "16", "10",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:pistol\"}", "24",
+                        "F", "F", "0",
+                        "lightmanscurrency:coin_gold", "F", "1"
+                },
+                {
+                        "4", "16", "10",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:shot\"}", "12",
+                        "F", "F", "0",
+                        "lightmanscurrency:coin_gold", "F", "1"
+                },
+                {
+                        "5", "12", "20",
+                        "lightmanscurrency:coin_gold", "F", "3",
+                        "F", "F", "0",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:fuel_tank\"}", "1"
+                },
+                {
+                        "5", "16", "20",
+                        "lightmanscurrency:coin_gold", "F", "3",
+                        "F", "F", "0",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:barrel\"}", "1"
+                },
+                {
+                        "5", "16", "20",
+                        "lightmanscurrency:coin_gold", "F", "3",
+                        "F", "F", "0",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:shiper\"}", "2"
+                },
+                {
+                        "5", "16", "20",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:fuel_tank\"}", "4",
+                        "F", "F", "0",
+                        "lightmanscurrency:coin_gold", "F", "2"
+                },
+                {
+                        "5", "16", "20",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:barrel\"}", "4",
+                        "F", "F", "0",
+                        "lightmanscurrency:coin_gold", "F", "2"
+                },
+                {
+                        "5", "16", "20",
+                        "tacz:ammo", "{AmmoId:\"tacz_unidict:shiper\"}", "8",
+                        "F", "F", "0",
+                        "lightmanscurrency:coin_gold", "F", "2"
                 }
         };
 
