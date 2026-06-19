@@ -27,10 +27,6 @@ public class CrateBlockEntity extends BlockEntity implements MenuProvider {
 
     private int progress = 0;
 
-    private static final int INPUT_SLOT = 0;
-    private static final int INPUT_SLOT_FLUID = 1;
-    private static final int OUTPUT_SLOT = 2;
-    private static final int OUTPUT_SLOT_FLUID = 3;
 
 
     private final SimpleContainer inventory = new SimpleContainer(27) {

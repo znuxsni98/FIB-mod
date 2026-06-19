@@ -8,6 +8,7 @@
   "block.fib_mod.engineer_workbench": "engineer workbench",
   "block.fib_mod.scientists_experimental_platform": "scientists experimental platform",
   "block.fib_mod.bowl_block": "bowl",
+  "block.fib_mod.crate": "Crate",
 
   "entity.minecraft.villager.fib_mod.tacz_merchant": "Arms dealer",
   "entity.minecraft.villager.fib_mod.engineer_merchant": "Engineer",
