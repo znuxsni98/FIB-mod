@@ -55,7 +55,7 @@ public class TICKETAGENT {
 */
     @SubscribeEvent
     public static void addTrades(VillagerTradesEvent event) {
-        if (!event.getType().equals(ModVillager.VILLAGERS.get(ModVillager.TICKETAGENT).profession().get())) return;
+        if (!event.getType().equals(ModVillager.VILLAGERS.get(ModVillager.TICKET_AGENT).profession().get())) return;
         Int2ObjectMap<List<VillagerTrades.ItemListing>> tierTradePool = event.getTrades();
 
         String[][] tradeConfigs = {

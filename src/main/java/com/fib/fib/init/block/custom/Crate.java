@@ -6,6 +6,7 @@ import com.fib.fib.init.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -27,6 +28,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
+import org.checkerframework.checker.units.qual.C;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class Crate extends Block implements EntityBlock {
@@ -135,22 +138,16 @@ public class Crate extends Block implements EntityBlock {
     }
 
     @Override
-    public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving) {
+    public void onRemove(BlockState state, @NotNull Level level, @NotNull BlockPos pos, BlockState newState, boolean isMoving) {
+        if (state.getBlock() != newState.getBlock()) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
 
-        // 旧方块与新方块不是同一个方块，时说明当前方块被替换/破坏了
-        if (pState.getBlock() != pNewState.getBlock()) {
-
-            // 取出当前位置的 BlockEntity
-            BlockEntity blockEntity = pLevel.getBlockEntity(pPos);
-
-            // 如果它确实是该方块的 BE，就执行掉落逻辑
-            if (blockEntity instanceof CrateBlockEntity Crate) {
-                Crate.drops();
+            if (blockEntity instanceof CrateBlockEntity crateEntity) {
+                Containers.dropContents(level, pos, crateEntity.getInventory());
             }
+            super.onRemove(state, level, pos, newState, isMoving);
         }
-
-        // 保留父类逻辑
-        super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
     }
+
 }
 

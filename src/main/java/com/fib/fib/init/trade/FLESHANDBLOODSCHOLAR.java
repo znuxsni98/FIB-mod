@@ -55,7 +55,7 @@ public class FLESHANDBLOODSCHOLAR {
 */
     @SubscribeEvent
     public static void addTrades(VillagerTradesEvent event) {
-        if (!event.getType().equals(ModVillager.VILLAGERS.get(ModVillager.FLESHANDBLOODSCHOLAR).profession().get())) return;
+        if (!event.getType().equals(ModVillager.VILLAGERS.get(ModVillager.FLESH_SCHOLAR).profession().get())) return;
         Int2ObjectMap<List<VillagerTrades.ItemListing>> tierTradePool = event.getTrades();
 
         String[][] tradeConfigs = {

@@ -55,7 +55,7 @@ public class SCIENTISTS {
 */
     @SubscribeEvent
     public static void addTrades(VillagerTradesEvent event) {
-        if (!event.getType().equals(ModVillager.VILLAGERS.get(ModVillager.SCIENTISTS).profession().get())) return;
+        if (!event.getType().equals(ModVillager.VILLAGERS.get(ModVillager.SCIENTIST).profession().get())) return;
         Int2ObjectMap<List<VillagerTrades.ItemListing>> tierTradePool = event.getTrades();
 
         String[][] tradeConfigs = {
