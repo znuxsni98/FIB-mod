@@ -60,10 +60,130 @@ public class RS {
 
         String[][] tradeConfigs = {
                 {
-                        "1", "8", "2",
-                        "lightmanscurrency:coin_iron", "F", "5",
+                        "1", "12", "2",
+                        "lightmanscurrency:coin_iron", "F", "3",
                         "F", "F", "0",
-                        "minecraft:gunpowder", "F", "8"
+                        "refinedstorage:processor_binding", "F", "8"
+                },
+                {
+                        "1", "12", "3",
+                        "refinedstorage:silicon", "F", "16",
+                        "F", "F", "0",
+                        "lightmanscurrency:coin_iron", "F", "1"
+                },
+                {
+                        "2", "8", "5",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "refinedstorage:destruction_core", "F", "3"
+                },
+                {
+                        "2", "8", "5",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "refinedstorage:construction_core", "F", "3"
+                },
+                {
+                        "2", "8", "5",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "refinedstorage:cable", "F", "16"
+                },
+                {
+                        "3", "16", "8",
+                        "lightmanscurrency:coin_gold", "F", "3",
+                        "F", "F", "0",
+                        "refinedstorage:importer", "F", "1"
+                },
+                {
+                        "3", "16", "8",
+                        "lightmanscurrency:coin_gold", "F", "3",
+                        "F", "F", "0",
+                        "refinedstorage:exporter", "F", "1"
+                },
+                {
+                        "3", "16", "8",
+                        "lightmanscurrency:coin_gold", "F", "3",
+                        "F", "F", "0",
+                        "refinedstorage:external_storage", "F", "1"
+                },
+                {
+                        "3", "16", "8",
+                        "lightmanscurrency:coin_gold", "F", "3",
+                        "F", "F", "0",
+                        "refinedstorage:constructor", "F", "1"
+                },
+                {
+                        "3", "16", "8",
+                        "lightmanscurrency:coin_gold", "F", "3",
+                        "F", "F", "0",
+                        "refinedstorage:destructor", "F", "1"
+                },
+                {
+                        "3", "16", "8",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "refinedstorage:pattern", "F", "8"
+                },
+                {
+                        "3", "16", "20",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "refinedstorage:filter", "F", "8"
+                },
+                {
+                        "4", "16", "20",
+                        "lightmanscurrency:coin_gold", "F", "5",
+                        "F", "F", "0",
+                        "refinedstorage:speed_upgrade", "F", "2"
+                },
+                {
+                        "4", "16", "20",
+                        "lightmanscurrency:coin_gold", "F", "5",
+                        "F", "F", "0",
+                        "refinedstorage:range_upgrade", "F", "2"
+                },
+                {
+                        "4", "16", "20",
+                        "lightmanscurrency:coin_gold", "F", "5",
+                        "F", "F", "0",
+                        "refinedstorage:crafting_upgrade", "F", "2"
+                },
+                {
+                        "4", "16", "20",
+                        "lightmanscurrency:coin_gold", "F", "5",
+                        "F", "F", "0",
+                        "refinedstorage:silk_touch_upgrade", "F", "2"
+                },
+                {
+                        "4", "16", "20",
+                        "lightmanscurrency:coin_gold", "F", "5",
+                        "F", "F", "0",
+                        "refinedstorage:fortune_3_upgrade", "F", "2"
+                },
+                {
+                        "4", "16", "20",
+                        "lightmanscurrency:coin_gold", "F", "5",
+                        "F", "F", "0",
+                        "refinedstorage:regulator_upgrade", "F", "2"
+                },
+                {
+                        "5", "8", "20",
+                        "lightmanscurrency:coin_gold", "F", "5",
+                        "F", "F", "0",
+                        "refinedstorage:1k_storage_disk", "F", "1"
+                },
+                {
+                        "5", "8", "20",
+                        "lightmanscurrency:coin_emerald", "F", "3",
+                        "F", "F", "0",
+                        "refinedstorage:4k_storage_disk", "F", "1"
+                },
+                {
+                        "5", "8", "20",
+                        "lightmanscurrency:coin_emerald", "F", "1",
+                        "F", "F", "0",
+                        "refinedstorage:stack_upgrade", "F", "1"
                 }
         };
 

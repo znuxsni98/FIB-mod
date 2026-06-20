@@ -123,7 +123,7 @@ public class DOCTOR  {
                         "5", "3", "40",
                         "lightmanscurrency:coin_emerald", "F", "1",
                         "F", "F", "0",
-                        "legendarysurvivaloverhaul:medkit", "F", "1"
+                        "legendarysurvivaloverhaul:morphine", "F", "1"
                 }
         };
 

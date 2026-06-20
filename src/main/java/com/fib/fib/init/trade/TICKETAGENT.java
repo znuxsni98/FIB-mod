@@ -60,10 +60,40 @@ public class TICKETAGENT {
 
         String[][] tradeConfigs = {
                 {
-                        "1", "8", "2",
-                        "lightmanscurrency:coin_iron", "F", "5",
+                        "1", "1", "10",
+                        "lightmanscurrency:coin_gold", "F", "1",
                         "F", "F", "0",
-                        "minecraft:gunpowder", "F", "8"
+                        "lightmanscurrency:transaction_register", "F", "1"
+                },
+                {
+                        "1", "4", "5",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "lightmanscurrency:atm_card", "F", "1"
+                },
+                {
+                        "2", "4", "40",
+                        "lightmanscurrency:coin_gold", "F", "3",
+                        "F", "F", "0",
+                        "lightmanscurrency:wallet_gold", "F", "1"
+                },
+                {
+                        "3", "4", "60",
+                        "lightmanscurrency:coin_emerald", "F", "1",
+                        "F", "F", "0",
+                        "lightmanscurrency:wallet_diamond", "F", "1"
+                },
+                {
+                        "4", "4", "100",
+                        "lightmanscurrency:coin_diamond", "F", "1",
+                        "F", "F", "0",
+                        "lightmanscurrency:wallet_netherite", "F", "1"
+                },
+                {
+                        "5", "4", "100",
+                        "lightmanscurrency:coin_netherite", "F", "1",
+                        "F", "F", "0",
+                        "lightmanscurrency:wallet_ender_dragon", "F", "1"
                 }
         };
 

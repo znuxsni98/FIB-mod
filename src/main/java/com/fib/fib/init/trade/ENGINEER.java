@@ -60,10 +60,94 @@ public class ENGINEER {
 
         String[][] tradeConfigs = {
                 {
-                        "1", "8", "2",
+                        "1", "4", "2",
                         "lightmanscurrency:coin_iron", "F", "5",
                         "F", "F", "0",
-                        "minecraft:gunpowder", "F", "8"
+                        "create:shaft", "F", "8"
+                },
+                {
+                        "1", "2", "10",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "createdieselgenerators:hammer", "F", "1"
+                },
+                {
+                        "1", "2", "10",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "createdieselgenerators:wire_cutters", "F", "1"
+                },
+                {
+                        "2", "3", "20",
+                        "create:goggles", "F", "3",
+                        "F", "F", "0",
+                        "createdieselgenerators:wire_cutters", "F", "1"
+                },
+                {
+                        "2", "3", "20",
+                        "lightmanscurrency:coin_gold", "F", "3",
+                        "F", "F", "0",
+                        "create:wrench", "F", "1"
+                },
+                {
+                        "3", "8", "8",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "create:cardboard", "F", "16"
+                },
+                {
+                        "3", "8", "8",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "create:cardboard", "F", "16"
+                },
+                {
+                        "3", "8", "8",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "create:andesite_alloy", "F", "8"
+                },
+                {
+                        "3", "8", "8",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "create:polished_rose_quartz", "F", "1"
+                },
+                {
+                        "4", "12", "10",
+                        "create:builders_tea", "F", "1",
+                        "F", "F", "0",
+                        "lightmanscurrency:coin_gold", "F", "3"
+                },
+                {
+                        "4", "12", "10",
+                        "create:blaze_cake", "F", "1",
+                        "F", "F", "0",
+                        "lightmanscurrency:coin_gold", "F", "2"
+                },
+                {
+                        "4", "16", "8",
+                        "lightmanscurrency:coin_gold", "F", "1",
+                        "F", "F", "0",
+                        "create:item_vault", "F", "2"
+                },
+                {
+                        "5", "16", "8",
+                        "lightmanscurrency:coin_emerald", "F", "1",
+                        "F", "F", "0",
+                        "create_connected:brass_gearbox", "F", "4"
+                },
+                {
+                        "5", "16", "8",
+                        "lightmanscurrency:coin_emerald", "F", "1",
+                        "F", "F", "0",
+                        "create_connected:six_way_gearbox", "F", "5"
+                },
+                {
+                        "5", "16", "8",
+                        "lightmanscurrency:coin_gold", "F", "2",
+                        "F", "F", "0",
+                        "create:gearbox", "F", "1"
                 }
         };
 

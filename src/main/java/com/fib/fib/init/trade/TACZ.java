@@ -73,49 +73,49 @@ public class TACZ {
                 },
                 {
                         "2", "1", "40",
-                        "lightmanscurrency:coin_emerald", "F", "2",
+                        "lightmanscurrency:coin_emerald", "F", "1",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:quenching\"}", "1"
                 },
                 {
                         "2", "1", "40",
-                        "lightmanscurrency:coin_emerald", "F", "2",
+                        "lightmanscurrency:coin_emerald", "F", "1",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:shadowkiller\"}", "1"
                 },
                 {
                         "2", "1", "40",
-                        "lightmanscurrency:coin_emerald", "F", "2",
+                        "lightmanscurrency:coin_emerald", "F", "1",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:silencefd\"}", "1"
                 },
                 {
                         "2", "1", "40",
-                        "lightmanscurrency:coin_emerald", "F", "2",
+                        "lightmanscurrency:coin_emerald", "F", "1",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:polaris\"}", "1"
                 },
                 {
                         "2", "1", "40",
-                        "lightmanscurrency:coin_emerald", "F", "2",
+                        "lightmanscurrency:coin_emerald", "F", "1",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:thieve_sea\"}", "1"
                 },
                 {
                         "2", "1", "40",
-                        "lightmanscurrency:coin_emerald", "F", "2",
+                        "lightmanscurrency:coin_emerald", "F", "1",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:mercy\"}", "1"
                 },
                 {
                         "2", "1", "40",
-                        "lightmanscurrency:coin_emerald", "F", "2",
+                        "lightmanscurrency:coin_emerald", "F", "1",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:cobra_vanguard\"}", "1"
                 },
                 {
                         "2", "1", "40",
-                        "lightmanscurrency:coin_emerald", "F", "2",
+                        "lightmanscurrency:coin_emerald", "F", "1",
                         "F", "F", "0",
                         "lrtactical:melee", "{MeleeWeaponId:\"delta_wt:treasure_kn\"}", "1"
                 },
