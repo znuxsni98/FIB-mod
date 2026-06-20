@@ -9,8 +9,27 @@
   "block.fib_mod.scientists_experimental_platform": "科学家实验台",
   "block.fib_mod.bowl_block": "碗",
   "block.fib_mod.crate": "板条箱",
+<<<<<<< Updated upstream
   "block.fib_mod.oil_drum": "油桶",
   "block.fib_mod.trash_can": "垃圾桶",
+=======
+  "block.fib_mod.white_iron_bucket": "白色铁桶",
+  "block.fib_mod.light_gray_iron_bucket": "浅灰色铁桶",
+  "block.fib_mod.gray_iron_bucket": "灰色铁桶",
+  "block.fib_mod.black_iron_bucket": "黑色铁桶",
+  "block.fib_mod.brown_iron_bucket": "棕色铁桶",
+  "block.fib_mod.red_iron_bucket": "红色铁桶",
+  "block.fib_mod.orange_iron_bucket": "橙色铁桶",
+  "block.fib_mod.yellow_iron_bucket": "黄色铁桶",
+  "block.fib_mod.lime_iron_bucket": "黄绿色铁桶",
+  "block.fib_mod.green_iron_bucket": "绿色铁桶",
+  "block.fib_mod.cyan_iron_bucket": "青色铁桶",
+  "block.fib_mod.light_blue_iron_bucket": "淡蓝色铁桶",
+  "block.fib_mod.blue_iron_bucket": "蓝色铁桶",
+  "block.fib_mod.purple_iron_bucket": "紫色铁桶",
+  "block.fib_mod.magenta_iron_bucket": "品红色铁桶",
+  "block.fib_mod.pink_iron_bucket": "粉红色铁桶",
+>>>>>>> Stashed changes
 
   "entity.minecraft.villager.fib_mod.tacz_merchant": "军火商",
   "entity.minecraft.villager.fib_mod.engineer_merchant": "工程师",

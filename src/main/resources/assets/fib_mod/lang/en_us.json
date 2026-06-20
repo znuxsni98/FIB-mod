@@ -9,6 +9,7 @@
   "block.fib_mod.scientists_experimental_platform": "scientists experimental platform",
   "block.fib_mod.bowl_block": "bowl",
   "block.fib_mod.crate": "Crate",
+<<<<<<< Updated upstream
   "block.fib_mod.oil_drum": "oil Drum",
   "block.fib_mod.trash_can": "Trash Can",
 
@@ -16,6 +17,24 @@
   "block.fib_mod.light_gray_iron_bucket": "Light Gray iron bucket",
 
 
+=======
+  "block.fib_mod.white_iron_bucket": "White Iron Bucket",
+  "block.fib_mod.light_gray_iron_bucket": "Light Gray Iron Bucket",
+  "block.fib_mod.gray_iron_bucket": "Gray Iron Bucket",
+  "block.fib_mod.black_iron_bucket": "Black Iron Bucket",
+  "block.fib_mod.brown_iron_bucket": "Brown Iron Bucket",
+  "block.fib_mod.red_iron_bucket": "Red Iron Bucket",
+  "block.fib_mod.orange_iron_bucket": "Orange Iron Bucket",
+  "block.fib_mod.yellow_iron_bucket": "Yellow Iron Bucket",
+  "block.fib_mod.lime_iron_bucket": "Lime Iron Bucket",
+  "block.fib_mod.green_iron_bucket": "Green Iron Bucket",
+  "block.fib_mod.cyan_iron_bucket": "Cyan Iron Bucket",
+  "block.fib_mod.light_blue_iron_bucket": "Light Blue Iron Bucket",
+  "block.fib_mod.blue_iron_bucket": "Blue Iron Bucket",
+  "block.fib_mod.purple_iron_bucket": "Purple Iron Bucket",
+  "block.fib_mod.magenta_iron_bucket": "Magenta Iron Bucket",
+  "block.fib_mod.pink_iron_bucket": "Pink Iron Bucket",
+>>>>>>> Stashed changes
 
   "entity.minecraft.villager.fib_mod.tacz_merchant": "Arms dealer",
   "entity.minecraft.villager.fib_mod.engineer_merchant": "Engineer",
