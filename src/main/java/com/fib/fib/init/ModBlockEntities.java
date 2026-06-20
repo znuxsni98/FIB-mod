@@ -1,6 +1,7 @@
 package com.fib.fib.init;
 
 import com.fib.fib.FIBMod;
+import com.fib.fib.blockentity.TrashCanBlockEntity;
 import com.fib.fib.init.block.ModBlocks;
 import com.fib.fib.blockentity.CrateBlockEntity;
 import com.fib.fib.blockentity.IceMakerBlockEntity;
@@ -34,6 +35,16 @@ public class ModBlockEntities {
                     BlockEntityType.Builder.of(
                             CrateBlockEntity::new,
                             ModBlocks.CRATE.get()
+                    ).build(null)
+            );
+
+    public static final RegistryObject<BlockEntityType<TrashCanBlockEntity>>
+            TRASH_CAN_BE =
+            BLOCK_ENTITIES.register("trash_can_be", () ->
+
+                    BlockEntityType.Builder.of(
+                            TrashCanBlockEntity::new,
+                            ModBlocks.TRASH_CAN.get()
                     ).build(null)
             );
 

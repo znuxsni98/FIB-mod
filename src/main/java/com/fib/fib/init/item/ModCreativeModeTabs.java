@@ -27,6 +27,8 @@ public class ModCreativeModeTabs {
                         pOutput.accept(ModBlocks.ENGINEER_WORKBENCH.get());
                         pOutput.accept(ModBlocks.SCIENTISTS_EXPERIMENTAL_PLATFORM.get());
                         pOutput.accept(ModBlocks.CRATE.get());
+                        pOutput.accept(ModBlocks.OIL_DRUM.get());
+                        pOutput.accept(ModBlocks.TRASH_CAN.get());
                     }).build());
 
     public static void register(IEventBus eventBus) {

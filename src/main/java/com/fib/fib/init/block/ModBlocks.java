@@ -19,6 +19,13 @@ public class ModBlocks {
             DeferredRegister.create(ForgeRegistries.BLOCKS, FIBMod.MOD_ID);
     //方块注册
 
+
+      public static final RegistryObject<Block> OIL_DRUM =
+            registryBlock("oil_drum", () -> new Oil_Drum(BlockBehaviour.Properties.of()));
+
+      public static final RegistryObject<Block> TRASH_CAN =
+            registryBlock("trash_can", () -> new Trash_Can(BlockBehaviour.Properties.of()));
+
       public static final RegistryObject<Block> CRATE =
             registryBlock("crate", () -> new Crate(BlockBehaviour.Properties.of()));
 

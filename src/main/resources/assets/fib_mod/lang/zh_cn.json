@@ -9,6 +9,8 @@
   "block.fib_mod.scientists_experimental_platform": "科学家实验台",
   "block.fib_mod.bowl_block": "碗",
   "block.fib_mod.crate": "板条箱",
+  "block.fib_mod.oil_drum": "油桶",
+  "block.fib_mod.trash_can": "垃圾桶",
 
   "entity.minecraft.villager.fib_mod.tacz_merchant": "军火商",
   "entity.minecraft.villager.fib_mod.engineer_merchant": "工程师",

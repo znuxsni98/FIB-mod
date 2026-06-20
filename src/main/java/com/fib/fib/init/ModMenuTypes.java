@@ -3,6 +3,7 @@ package com.fib.fib.init;
 import com.fib.fib.FIBMod;
 import com.fib.fib.gui.container.menu.CrateMenu;
 import com.fib.fib.gui.container.menu.IceMakerMenu;
+import com.fib.fib.gui.container.menu.TrashCanMenu;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;
@@ -33,6 +34,13 @@ public class ModMenuTypes {
             registerMenuType(
                     "crate_menu",
                     CrateMenu::new
+            );
+
+    public static final RegistryObject<MenuType<TrashCanMenu>>
+            TRASH_CAN_MENU =
+            registerMenuType(
+                    "trash_can_menu",
+                    TrashCanMenu::new
             );
 
 

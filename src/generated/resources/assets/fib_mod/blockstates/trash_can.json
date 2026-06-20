@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "fib_mod:block/trash_can"
+    }
+  }
+}

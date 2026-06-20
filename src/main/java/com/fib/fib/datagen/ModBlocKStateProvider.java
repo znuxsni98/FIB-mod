@@ -21,6 +21,8 @@ public class ModBlocKStateProvider extends BlockStateProvider {
         //BB模型
         simpleBlockWithoutBlockModel(ModBlocks.BOWL_BLOCK);
         simpleBlockWithoutBlockModel(ModBlocks.CRATE);
+        simpleBlockWithoutBlockModel(ModBlocks.TRASH_CAN);
+        simpleBlockWithoutBlockModel(ModBlocks.OIL_DRUM);
 
         //有朝向
         customHorizontalBlock(ModBlocks.ICE_MAKER);
