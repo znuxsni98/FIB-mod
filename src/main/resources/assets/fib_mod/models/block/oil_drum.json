@@ -3,8 +3,8 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [42, 42],
 	"textures": {
-		"0": "oil_drum",
-		"particle": "oil_drum"
+		"0": "fib_mod:block/oil_drum",
+		"particle": "fib_mod:block/oil_drum"
 	},
 	"elements": [
 		{
@@ -58,6 +58,43 @@
 				"up": {"uv": [13.71429, 5.33333, 11.42857, 0], "texture": "#0"},
 				"down": {"uv": [11.42857, 0, 9.14286, 5.33333], "texture": "#0"}
 			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"scale": [0.3, 0.3, 0.3]
+		},
+		"thirdperson_lefthand": {
+			"scale": [0.3, 0.3, 0.3]
+		},
+		"firstperson_righthand": {
+			"rotation": [0, 50, 0],
+			"scale": [0.3, 0.3, 0.3]
+		},
+		"firstperson_lefthand": {
+			"rotation": [0, 50, 0],
+			"scale": [0.3, 0.3, 0.3]
+		},
+		"ground": {
+			"translation": [0, 2, 0],
+			"scale": [0.3, 0.3, 0.3]
+		},
+		"gui": {
+			"rotation": [20, 45, 0],
+			"translation": [0, -1.25, 0],
+			"scale": [0.6, 0.6, 0.6]
+		},
+		"fixed": {
+			"scale": [0.6, 0.6, 0.6]
+		}
+	},
+	"groups": [
+		{
+			"name": "VoxelShapes",
+			"origin": [8, 8, 8],
+			"scope": 0,
+			"color": 0,
+			"children": [0, 1, 2, 3]
 		}
 	]
 }
