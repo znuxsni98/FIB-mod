@@ -84,20 +84,6 @@ public class Trash_Can extends Block implements EntityBlock {
         return new CrateBlockEntity(blockPos, blockState);
     }
 
-    @Nullable
-    @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
-            Level pLevel,
-            BlockState pState,
-            BlockEntityType<T> pBlockEntityType) {
-
-
-        return pBlockEntityType == ModBlockEntities.TRASH_CAN_BE.get()
-                ? (lvl, pos, state, be) ->
-                ((CrateBlockEntity) be).tick()
-                : null;
-    }
-
 
 
     @Override

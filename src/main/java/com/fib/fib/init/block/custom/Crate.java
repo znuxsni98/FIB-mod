@@ -84,21 +84,6 @@ public class Crate extends Block implements EntityBlock {
         return new CrateBlockEntity(blockPos, blockState);
     }
 
-    @Nullable
-    @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
-            Level pLevel,
-            BlockState pState,
-            BlockEntityType<T> pBlockEntityType) {
-
-
-        return pBlockEntityType == ModBlockEntities.CRATE_BE.get()
-                ? (lvl, pos, state, be) ->
-                ((CrateBlockEntity) be).tick()
-                : null;
-    }
-
-
 
     @Override
     public InteractionResult use(BlockState state, Level level,
@@ -114,15 +99,7 @@ public class Crate extends Block implements EntityBlock {
             // 确认该实体确实是正确方块
             if (entity instanceof CrateBlockEntity juicer) {
 
-                // 打开界面。
-                // NetworkHooks.openScreen 会：
-                // 1. 在服务端创建 Menu
-                // 2. 通过网络把打开界面的信息发送给客户端
-                // 3. 客户端根据 MenuType 创建对应的 Screen
-                //
-                // 这里传入 pos，是为了让客户端能够找到对应位置的 BlockEntity。
-                NetworkHooks.openScreen((ServerPlayer) player, juicer, pos);
-
+                player.openMenu(juicer);
             } else {
                 // 如果当前位置没有正确的 BlockEntity，
                 // 说明出现了逻辑错误，直接抛出异常。
