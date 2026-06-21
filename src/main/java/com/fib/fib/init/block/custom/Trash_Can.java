@@ -1,11 +1,9 @@
 package com.fib.fib.init.block.custom;
 
 
-import com.fib.fib.blockentity.CrateBlockEntity;
-import com.fib.fib.init.ModBlockEntities;
+import com.fib.fib.blockentity.TrashCanBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -18,8 +16,6 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityTicker;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -27,7 +23,6 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,7 +76,7 @@ public class Trash_Can extends Block implements EntityBlock {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos blockPos, BlockState blockState) {
-        return new CrateBlockEntity(blockPos, blockState);
+        return new TrashCanBlockEntity(blockPos, blockState);
     }
 
 
@@ -98,17 +93,8 @@ public class Trash_Can extends Block implements EntityBlock {
             BlockEntity entity = level.getBlockEntity(pos);
 
             // 确认该实体确实是正确方块
-            if (entity instanceof CrateBlockEntity juicer) {
-
-                // 打开界面。
-                // NetworkHooks.openScreen 会：
-                // 1. 在服务端创建 Menu
-                // 2. 通过网络把打开界面的信息发送给客户端
-                // 3. 客户端根据 MenuType 创建对应的 Screen
-                //
-                // 这里传入 pos，是为了让客户端能够找到对应位置的 BlockEntity。
-                NetworkHooks.openScreen((ServerPlayer) player, juicer, pos);
-
+            if (entity instanceof TrashCanBlockEntity juicer) {
+                player.openMenu(juicer);
             } else {
                 // 如果当前位置没有正确的 BlockEntity，
                 // 说明出现了逻辑错误，直接抛出异常。
@@ -127,7 +113,7 @@ public class Trash_Can extends Block implements EntityBlock {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
 
-            if (blockEntity instanceof CrateBlockEntity crateEntity) {
+            if (blockEntity instanceof TrashCanBlockEntity crateEntity) {
                 Containers.dropContents(level, pos, crateEntity.getInventory());
             }
             super.onRemove(state, level, pos, newState, isMoving);
