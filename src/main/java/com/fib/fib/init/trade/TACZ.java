@@ -129,7 +129,7 @@ public class TACZ {
                         "3", "6", "10",
                         "lightmanscurrency:coin_gold", "F", "1",
                         "F", "F", "0",
-                        "lrtactical:throwable", "{ThrowableId:\"lrtactical:molotov\"}", "3"
+                        "lrtactical:throwable", "{ThrowableId:\"lrtactical:m67\"}", "3"
                 },
                 {
                         "3", "8", "8",
