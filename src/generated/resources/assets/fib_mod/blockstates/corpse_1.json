@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "fib_mod:block/corpse_1",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "fib_mod:block/corpse_1"
+    },
+    "facing=south": {
+      "model": "fib_mod:block/corpse_1",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "fib_mod:block/corpse_1",
+      "y": 270
+    }
+  }
+}

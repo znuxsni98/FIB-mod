@@ -1,6 +1,7 @@
 package com.fib.fib.init.block;
 
 import com.fib.fib.FIBMod;
+import com.fib.fib.init.block.custom.corpse.*;
 import com.fib.fib.init.block.custom.*;
 import com.fib.fib.init.item.ModItems;
 import net.minecraft.world.item.BlockItem;
@@ -18,7 +19,11 @@ public class ModBlocks {
     public static final DeferredRegister<Block> BLOCKS =
             DeferredRegister.create(ForgeRegistries.BLOCKS, FIBMod.MOD_ID);
     //方块注册
+      public static final RegistryObject<Block> CORPSE_1 =
+            registryBlock("corpse_1", () -> new Corpse_1(BlockBehaviour.Properties.of()));
 
+      public static final RegistryObject<Block> CORPSE_2 =
+            registryBlock("corpse_2", () -> new Corpse_2(BlockBehaviour.Properties.of()));
 
       public static final RegistryObject<Block> OIL_DRUM =
             registryBlock("oil_drum", () -> new Oil_Drum(BlockBehaviour.Properties.of()));

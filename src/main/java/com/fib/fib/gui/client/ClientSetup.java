@@ -1,6 +1,8 @@
 package com.fib.fib.gui.client;
 
 import com.fib.fib.FIBMod;
+import com.fib.fib.gui.container.screen.corpse.Corpse1Screen;
+import com.fib.fib.gui.container.screen.corpse.Corpse2Screen;
 import com.fib.fib.gui.container.screen.CrateScreen;
 import com.fib.fib.gui.container.screen.TrashCanScreen;
 import com.fib.fib.init.ModMenuTypes;
@@ -62,6 +64,16 @@ public class ClientSetup {
         MenuScreens.register(
                 ModMenuTypes.TRASH_CAN_MENU.get(),
                 TrashCanScreen::new
+        );
+
+        MenuScreens.register(
+                ModMenuTypes.CORPSE1_MENU.get(),
+                Corpse1Screen::new
+        );
+
+        MenuScreens.register(
+                ModMenuTypes.CORPSE2_MENU.get(),
+                Corpse2Screen::new
         );
     }
 }

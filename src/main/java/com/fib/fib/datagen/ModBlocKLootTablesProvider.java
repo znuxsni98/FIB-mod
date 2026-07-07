@@ -24,6 +24,8 @@ public class ModBlocKLootTablesProvider extends BlockLootSubProvider {
       dropSelf(ModBlocks.CRATE.get());
       dropSelf(ModBlocks.OIL_DRUM.get());
       dropSelf(ModBlocks.TRASH_CAN.get());
+      dropSelf(ModBlocks.CORPSE_1.get());
+      dropSelf(ModBlocks.CORPSE_2.get());
     }
 
     @Override

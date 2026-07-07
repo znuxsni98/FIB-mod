@@ -1,7 +1,10 @@
 package com.fib.fib.init;
 
 import com.fib.fib.FIBMod;
+//import com.fib.fib.blockentity.OilDrumBlockEntity;
 import com.fib.fib.blockentity.TrashCanBlockEntity;
+import com.fib.fib.blockentity.corpse.Corpse1BlockEntity;
+import com.fib.fib.blockentity.corpse.Corpse2BlockEntity;
 import com.fib.fib.init.block.ModBlocks;
 import com.fib.fib.blockentity.CrateBlockEntity;
 import com.fib.fib.blockentity.IceMakerBlockEntity;
@@ -48,6 +51,36 @@ public class ModBlockEntities {
                     ).build(null)
             );
 
+    public static final RegistryObject<BlockEntityType<Corpse1BlockEntity>>
+            CORPSE1_BE =
+            BLOCK_ENTITIES.register("corpse1_be", () ->
+
+                    BlockEntityType.Builder.of(
+                            Corpse1BlockEntity::new,
+                            ModBlocks.CORPSE_1.get()
+                    ).build(null)
+            );
+
+    public static final RegistryObject<BlockEntityType<Corpse2BlockEntity>>
+            CORPSE2_BE =
+            BLOCK_ENTITIES.register("corpse2_be", () ->
+
+                    BlockEntityType.Builder.of(
+                            Corpse2BlockEntity::new,
+                            ModBlocks.CORPSE_2.get()
+                    ).build(null)
+            );
+
+
+//    public static final RegistryObject<BlockEntityType<OilDrumBlockEntity>>
+//            OIL_DRUM_BE =
+//            BLOCK_ENTITIES.register("oil_drum_be", () ->
+//
+//                    BlockEntityType.Builder.of(
+//                            OilDrumBlockEntity::new,
+//                            ModBlocks.OIL_DRUM.get()
+//                    ).build(null)
+//            );
 
 
     public static void register(IEventBus eventBus) {

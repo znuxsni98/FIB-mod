@@ -25,6 +25,8 @@ public class ModBlocKStateProvider extends BlockStateProvider {
         simpleBlockWithoutBlockModel(ModBlocks.OIL_DRUM);
 
         //有朝向
+        customHorizontalBlock(ModBlocks.CORPSE_1);
+        customHorizontalBlock(ModBlocks.CORPSE_2);
         customHorizontalBlock(ModBlocks.ICE_MAKER);
         customHorizontalBlock(ModBlocks.RADIO_STATION);
         customHorizontalBlock(ModBlocks.SCIENTISTS_EXPERIMENTAL_PLATFORM);
