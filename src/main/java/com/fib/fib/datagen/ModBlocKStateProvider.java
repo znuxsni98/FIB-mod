@@ -23,6 +23,8 @@ public class ModBlocKStateProvider extends BlockStateProvider {
         simpleBlockWithoutBlockModel(ModBlocks.CRATE);
         simpleBlockWithoutBlockModel(ModBlocks.TRASH_CAN);
         simpleBlockWithoutBlockModel(ModBlocks.OIL_DRUM);
+        simpleBlockWithoutBlockModel(ModBlocks.VAULT_WALL);
+        simpleBlockWithoutBlockModel(ModBlocks.VAULT_GATE);
 
         //有朝向
         customHorizontalBlock(ModBlocks.CORPSE_1);

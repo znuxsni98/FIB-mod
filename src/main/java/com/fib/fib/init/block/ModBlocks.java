@@ -19,6 +19,12 @@ public class ModBlocks {
     public static final DeferredRegister<Block> BLOCKS =
             DeferredRegister.create(ForgeRegistries.BLOCKS, FIBMod.MOD_ID);
     //方块注册
+      public static final RegistryObject<Block> VAULT_GATE =
+            registryBlock("vault_gate", () -> new Block(BlockBehaviour.Properties.of().strength(1200,5000)));
+
+      public static final RegistryObject<Block> VAULT_WALL =
+            registryBlock("vault_wall", () -> new Block(BlockBehaviour.Properties.of().strength(1200,5000)));
+
       public static final RegistryObject<Block> CORPSE_1 =
             registryBlock("corpse_1", () -> new Corpse_1(BlockBehaviour.Properties.of()));
 

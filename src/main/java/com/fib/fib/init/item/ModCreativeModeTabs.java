@@ -31,6 +31,8 @@ public class ModCreativeModeTabs {
                         pOutput.accept(ModBlocks.TRASH_CAN.get());
                         pOutput.accept(ModBlocks.CORPSE_1.get());
                         pOutput.accept(ModBlocks.CORPSE_2.get());
+                        pOutput.accept(ModBlocks.VAULT_WALL.get());
+                        pOutput.accept(ModBlocks.VAULT_GATE.get());
                     }).build());
 
     public static void register(IEventBus eventBus) {
