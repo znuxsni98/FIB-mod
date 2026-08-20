@@ -262,6 +262,12 @@ public class SCIENTISTS {
                         "lightmanscurrency:coin_emerald", "F", "5",
                         "F", "F", "0",
                         "spore:charred_syringe", "F", "1"
+                },
+                {
+                        "5", "1", "30",
+                        "lightmanscurrency:coin_emerald", "F", "5",
+                        "F", "F", "0",
+                        "spore:skeletal_syringe", "F", "1"
                 }
         };
 

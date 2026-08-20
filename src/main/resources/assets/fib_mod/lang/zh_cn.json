@@ -18,14 +18,22 @@
   "block.fib_mod.vault_gate": "保险库大门",
 
 
+  "entity.minecraft.villager.tacz_merchant": "军火商",
+  "entity.minecraft.villager.engineer_merchant": "工程师",
+  "entity.minecraft.villager.rs_merchant": "网络管理员",
+  "entity.minecraft.villager.scientist_merchant": "科学家",
+  "entity.minecraft.villager.beggar_merchant": "乞丐",
+  "entity.minecraft.villager.doctor_merchant": "医生",
+  "entity.minecraft.villager.flesh_scholar_merchant": "生肉收集者",
+  "entity.minecraft.villager.ticket_agent_merchant": "票务员",
 
   "entity.minecraft.villager.fib_mod.tacz_merchant": "军火商",
   "entity.minecraft.villager.fib_mod.engineer_merchant": "工程师",
-  "entity.minecraft.villager.fib_mod.rs_merchant": "RS商人",
+  "entity.minecraft.villager.fib_mod.rs_merchant": "网络管理员",
   "entity.minecraft.villager.fib_mod.scientist_merchant": "科学家",
   "entity.minecraft.villager.fib_mod.beggar_merchant": "乞丐",
   "entity.minecraft.villager.fib_mod.doctor_merchant": "医生",
-  "entity.minecraft.villager.fib_mod.flesh_scholar_merchant": "血肉学者",
+  "entity.minecraft.villager.fib_mod.flesh_scholar_merchant": "生肉收集者",
   "entity.minecraft.villager.fib_mod.ticket_agent_merchant": "票务员",
 
 
