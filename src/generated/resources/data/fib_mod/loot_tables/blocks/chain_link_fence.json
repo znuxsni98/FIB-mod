@@ -11,11 +11,11 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "fib_mod:vault_gate"
+          "name": "fib_mod:chain_link_fence"
         }
       ],
       "rolls": 1.0
     }
   ],
-  "random_sequence": "fib_mod:blocks/vault_gate"
+  "random_sequence": "fib_mod:blocks/chain_link_fence"
 }

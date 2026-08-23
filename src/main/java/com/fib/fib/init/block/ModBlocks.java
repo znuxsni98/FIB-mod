@@ -20,16 +20,16 @@ public class ModBlocks {
             DeferredRegister.create(ForgeRegistries.BLOCKS, FIBMod.MOD_ID);
     //方块注册
       public static final RegistryObject<Block> VAULT_GATE =
-            registryBlock("vault_gate", () -> new Block(BlockBehaviour.Properties.of().strength(1200,5000)));
+            registryBlock("vault_gate", () -> new Block(BlockBehaviour.Properties.of().strength(3000,5000).noLootTable()));
 
       public static final RegistryObject<Block> VAULT_WALL =
-            registryBlock("vault_wall", () -> new Block(BlockBehaviour.Properties.of().strength(1200,5000)));
+            registryBlock("vault_wall", () -> new Block(BlockBehaviour.Properties.of().strength(3000,5000).noLootTable()));
 
       public static final RegistryObject<Block> CORPSE_1 =
-            registryBlock("corpse_1", () -> new Corpse_1(BlockBehaviour.Properties.of()));
+            registryBlock("corpse_1", () -> new Corpse_1(BlockBehaviour.Properties.of().noOcclusion()));
 
       public static final RegistryObject<Block> CORPSE_2 =
-            registryBlock("corpse_2", () -> new Corpse_2(BlockBehaviour.Properties.of()));
+            registryBlock("corpse_2", () -> new Corpse_2(BlockBehaviour.Properties.of().noOcclusion()));
 
       public static final RegistryObject<Block> OIL_DRUM =
             registryBlock("oil_drum", () -> new Oil_Drum(BlockBehaviour.Properties.of()));
@@ -41,10 +41,10 @@ public class ModBlocks {
             registryBlock("crate", () -> new Crate(BlockBehaviour.Properties.of()));
 
       public static final RegistryObject<Block> ICE_MAKER =
-              registryBlock("ice_maker", () -> new Ice_Maker(BlockBehaviour.Properties.of()));
+            registryBlock("ice_maker", () -> new Ice_Maker(BlockBehaviour.Properties.of()));
 
       public static final RegistryObject<Block> RADIO_STATION =
-              registryBlock("radio_station", () ->new Radio_Station(BlockBehaviour.Properties.of().noOcclusion()));
+            registryBlock("radio_station", () ->new Radio_Station(BlockBehaviour.Properties.of().noOcclusion()));
       
       public static final RegistryObject<Block> BOWL_BLOCK =
             registryBlock("bowl_block", () ->new Bowl_Block(BlockBehaviour.Properties.of()));
@@ -54,6 +54,12 @@ public class ModBlocks {
 
       public static final RegistryObject<Block> SCIENTISTS_EXPERIMENTAL_PLATFORM =
             registryBlock("scientists_experimental_platform", () ->new Scientists_Experimental_Platform(BlockBehaviour.Properties.of().noOcclusion()));
+
+      public static final RegistryObject<Block> CHAIN_LINK_FENCE =
+            registryBlock("chain_link_fence", () ->new Chain_Link_Fence(BlockBehaviour.Properties.of().noOcclusion()));
+
+      public static final RegistryObject<Block> RU_MENG_DOLL =
+            registryBlock("ru_meng_doll", () ->new Ru_Meng_Doll(BlockBehaviour.Properties.of().noOcclusion()));
 
 
 

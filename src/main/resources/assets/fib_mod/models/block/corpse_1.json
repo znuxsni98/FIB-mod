@@ -1,6 +1,7 @@
 {
 	"format_version": "1.9.0",
 	"credit": "Made with Blockbench",
+	"render_type": "cutout_mipped",
 	"textures": {
 		"0": "fib_mod:block/corpse_player",
 		"particle": "fib_mod:block/corpse_player"

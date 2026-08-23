@@ -16,8 +16,19 @@
   "block.fib_mod.iron_bucket": "Iron Bucket",
   "block.fib_mod.vault_wall": "Vault Wall",
   "block.fib_mod.vault_gate": "Vault Gate",
+  "block.fib_mod.chain_link_fence": "Chain Link Fence",
+  "block.fib_mod.ru_meng_doll": "Ru Meng Doll",
 
 
+
+  "entity.minecraft.villager.tacz_merchant": "Arms dealer",
+  "entity.minecraft.villager.engineer_merchant": "Engineer",
+  "entity.minecraft.villager.rs_merchant": "RS merchant",
+  "entity.minecraft.villager.scientist_merchant": "Scientist",
+  "entity.minecraft.villager.beggar_merchant": "Beggar",
+  "entity.minecraft.villager.doctor_merchant": "Doctor",
+  "entity.minecraft.villager.flesh_scholar_merchant": "Flesh and blood scholar",
+  "entity.minecraft.villager.ticket_agent_merchant": "Ticket agent",
 
   "entity.minecraft.villager.fib_mod.tacz_merchant": "Arms dealer",
   "entity.minecraft.villager.fib_mod.engineer_merchant": "Engineer",

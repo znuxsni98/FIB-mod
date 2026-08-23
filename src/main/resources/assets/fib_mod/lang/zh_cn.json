@@ -3,7 +3,7 @@
 
   "item.fib_mod.fib_logo_mod": "FIB-LOGO",
 
-  "block.fib_mod.ice_maker": "制冰机",
+  "block.fib_mod.ice_maker": "制冰机-配方未完成",
   "block.fib_mod.radio_station": "电台",
   "block.fib_mod.engineer_workbench": "工程师工作台",
   "block.fib_mod.scientists_experimental_platform": "科学家实验台",
@@ -16,6 +16,9 @@
   "block.fib_mod.iron_bucket": "铁桶",
   "block.fib_mod.vault_wall": "保险库墙壁",
   "block.fib_mod.vault_gate": "保险库大门",
+  "block.fib_mod.chain_link_fence": "铁丝网围栏-未完成",
+  "block.fib_mod.ru_meng_doll": "如梦玩偶",
+
 
 
   "entity.minecraft.villager.tacz_merchant": "军火商",

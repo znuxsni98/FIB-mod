@@ -11,11 +11,11 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "fib_mod:vault_wall"
+          "name": "fib_mod:ru_meng_doll"
         }
       ],
       "rolls": 1.0
     }
   ],
-  "random_sequence": "fib_mod:blocks/vault_wall"
+  "random_sequence": "fib_mod:blocks/ru_meng_doll"
 }

@@ -26,7 +26,7 @@ public class ModVillager {
     public static final String TACZ = "tacz";
     public static final String RS = "rs";
     public static final String ENGINEER = "engineer";
-    public static final String SCIENTIST = "scientists";
+    public static final String SCIENTIST = "scientist";
     public static final String BEGGAR = "beggar";
     public static final String DOCTOR = "doctor";
     public static final String FLESH_SCHOLAR = "flesh_scholar";

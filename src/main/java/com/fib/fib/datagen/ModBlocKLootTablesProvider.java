@@ -26,8 +26,8 @@ public class ModBlocKLootTablesProvider extends BlockLootSubProvider {
       dropSelf(ModBlocks.TRASH_CAN.get());
       dropSelf(ModBlocks.CORPSE_1.get());
       dropSelf(ModBlocks.CORPSE_2.get());
-      dropSelf(ModBlocks.VAULT_WALL.get());
-      dropSelf(ModBlocks.VAULT_GATE.get());
+      dropSelf(ModBlocks.CHAIN_LINK_FENCE.get());
+      dropSelf(ModBlocks.RU_MENG_DOLL.get());
     }
 
     @Override

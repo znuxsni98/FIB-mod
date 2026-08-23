@@ -1,5 +1,6 @@
 package com.fib.fib;
 
+//import com.fib.fib.entity.ModEntities;
 import com.fib.fib.init.ModBlockEntities;
 import com.fib.fib.init.ModMenuTypes;
 import com.fib.fib.init.Villager.ModVillager;
@@ -43,6 +44,8 @@ public class FIBMod {
 
         ModVillager.register(modEventBus);
         ModMenuTypes.register(modEventBus);
+
+//        ModEntities.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
