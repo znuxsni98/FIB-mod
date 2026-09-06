@@ -10,7 +10,7 @@ import java.util.Set;
 public class ModLootTableProvider {
     public static LootTableProvider create(PackOutput PackOutput) {
         return new LootTableProvider(PackOutput, Set.of(), List.of(
-                new LootTableProvider.SubProviderEntry(ModBlocKLootTablesProvider::new, LootContextParamSets.BLOCK)
+                new LootTableProvider.SubProviderEntry(ModBlockLootTablesProvider::new, LootContextParamSets.BLOCK)
         ));
     }
 }

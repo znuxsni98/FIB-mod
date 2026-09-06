@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "fib_mod:item/spring_and_autumn_intestines"
+  }
+}

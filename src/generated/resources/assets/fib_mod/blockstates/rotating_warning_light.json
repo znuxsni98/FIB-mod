@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "fib_mod:block/rotating_warning_light",
+      "x": 180
+    },
+    "facing=east": {
+      "model": "fib_mod:block/rotating_warning_light",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north": {
+      "model": "fib_mod:block/rotating_warning_light",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "fib_mod:block/rotating_warning_light",
+      "x": 90,
+      "y": 180
+    },
+    "facing=up": {
+      "model": "fib_mod:block/rotating_warning_light"
+    },
+    "facing=west": {
+      "model": "fib_mod:block/rotating_warning_light",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

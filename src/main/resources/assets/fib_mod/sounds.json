@@ -1,0 +1,32 @@
+{
+    "block_place":{
+      "subtitle": "sounds.fib_mod.block_place",
+      "sounds": [
+        "fib_mod:block_place"
+      ]
+    },
+    "block_break":{
+      "subtitle": "sounds.fib_mod.block_break",
+      "sounds": [
+        "fib_mod:block_break"
+      ]
+    },
+    "block_hit":{
+      "subtitle": "sounds.fib_mod.block_hit",
+      "sounds": [
+        "fib_mod:block_hit"
+      ]
+    },
+    "block_step":{
+      "subtitle": "sounds.fib_mod.block_step",
+      "sounds": [
+        "fib_mod:block_step"
+      ]
+    },
+    "block_fall":{
+      "subtitle": "sounds.fib_mod.block_fall",
+      "sounds": [
+        "fib_mod:block_fall"
+    ]
+  }
+}

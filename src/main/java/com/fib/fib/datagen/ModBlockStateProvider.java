@@ -13,8 +13,8 @@ import net.minecraftforge.client.model.generators.MultiPartBlockStateBuilder;
 import net.minecraftforge.common.data.ExistingFileHelper;
 import net.minecraftforge.registries.RegistryObject;
 
-public class ModBlocKStateProvider extends BlockStateProvider {
-    public ModBlocKStateProvider(PackOutput output, ExistingFileHelper exFileHelper) {
+public class ModBlockStateProvider extends BlockStateProvider {
+    public ModBlockStateProvider(PackOutput output, ExistingFileHelper exFileHelper) {
         super(output, FIBMod.MOD_ID, exFileHelper);
     }
 
@@ -31,13 +31,16 @@ public class ModBlocKStateProvider extends BlockStateProvider {
         simpleBlockWithoutBlockModel(ModBlocks.VAULT_GATE);
         simpleBlockWithoutBlockModel(ModBlocks.RU_MENG_DOLL);
 
-        //有朝向
+        //4向
         customHorizontalBlock(ModBlocks.CORPSE_1);
         customHorizontalBlock(ModBlocks.CORPSE_2);
         customHorizontalBlock(ModBlocks.ICE_MAKER);
         customHorizontalBlock(ModBlocks.RADIO_STATION);
         customHorizontalBlock(ModBlocks.SCIENTISTS_EXPERIMENTAL_PLATFORM);
         customHorizontalBlock(ModBlocks.ENGINEER_WORKBENCH);
+
+        //6向
+        customDirectionalBlock(ModBlocks.ROTATING_WARNING_LIGHT);
 
         //围栏
         customFence(ModBlocks.CHAIN_LINK_FENCE, "chain_link_fence");
@@ -65,6 +68,13 @@ public class ModBlocKStateProvider extends BlockStateProvider {
         ResourceLocation model = modLoc("block/" + block.getId().getPath());
         horizontalBlock(block.get(), models().getExistingFile(model));
         simpleBlockItem(block.get(), models().getExistingFile(model));
+    }
+
+    private <T extends Block> void customDirectionalBlock(RegistryObject<T> block) {
+        ResourceLocation model = modLoc("block/" + block.getId().getPath());
+        ModelFile existingModel = models().getExistingFile(model);
+        directionalBlock(block.get(), existingModel);
+        simpleBlockItem(block.get(), existingModel);
     }
 
     private <T extends Block> void simpleBlockWithoutBlockModel(RegistryObject<T> block) {

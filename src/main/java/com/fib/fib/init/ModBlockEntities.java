@@ -2,12 +2,10 @@ package com.fib.fib.init;
 
 import com.fib.fib.FIBMod;
 //import com.fib.fib.blockentity.OilDrumBlockEntity;
-import com.fib.fib.blockentity.TrashCanBlockEntity;
+import com.fib.fib.blockentity.*;
 import com.fib.fib.blockentity.corpse.Corpse1BlockEntity;
 import com.fib.fib.blockentity.corpse.Corpse2BlockEntity;
 import com.fib.fib.init.block.ModBlocks;
-import com.fib.fib.blockentity.CrateBlockEntity;
-import com.fib.fib.blockentity.IceMakerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -71,6 +69,26 @@ public class ModBlockEntities {
                     ).build(null)
             );
 
+
+    public static final RegistryObject<BlockEntityType<RuMengDollBlockEntity>>
+            RU_MENG_DOLL_BE =
+            BLOCK_ENTITIES.register("ru_meng_doll_be", () ->
+
+                    BlockEntityType.Builder.of(
+                            RuMengDollBlockEntity::new,
+                            ModBlocks.RU_MENG_DOLL.get()
+                    ).build(null)
+            );
+
+    public static final RegistryObject<BlockEntityType<SolarPanelBlockEntity>>
+            SOLAR_PANEL_BE =
+            BLOCK_ENTITIES.register("solar_panel_be", () ->
+
+                    BlockEntityType.Builder.of(
+                            SolarPanelBlockEntity::new,
+                            ModBlocks.SOLAR_PANEL.get()
+                    ).build(null)
+            );
 
 //    public static final RegistryObject<BlockEntityType<OilDrumBlockEntity>>
 //            OIL_DRUM_BE =

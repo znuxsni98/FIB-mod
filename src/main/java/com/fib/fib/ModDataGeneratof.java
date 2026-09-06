@@ -27,15 +27,15 @@ public class ModDataGeneratof {
         CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
 
         generator.addProvider(event.includeServer(), new LootTableProvider(packOutput, Set.of(), List.of(
-                new LootTableProvider.SubProviderEntry(ModBlocKLootTablesProvider::new, LootContextParamSets.BLOCK)
+                new LootTableProvider.SubProviderEntry(ModBlockLootTablesProvider::new, LootContextParamSets.BLOCK)
         )));
 
         BlockTagsProvider blockTagsProvider = generator.addProvider(event.includeServer(),
-                new ModBlocKTagsProvider(packOutput, lookupProvider, existingFileHelper));
+                new ModBlockTagsProvider(packOutput, lookupProvider, existingFileHelper));
         generator.addProvider(event.includeServer(), new ModItemTagsProvider(packOutput, lookupProvider, blockTagsProvider.contentsGetter(),existingFileHelper));
 
 
-        generator.addProvider(event.includeClient(), new ModBlocKStateProvider(packOutput, existingFileHelper));
+        generator.addProvider(event.includeClient(), new ModBlockStateProvider(packOutput, existingFileHelper));
         generator.addProvider(event.includeClient(), new ModItemModelsProvider(packOutput, existingFileHelper));
 
     }

@@ -2,6 +2,11 @@
   "itemGroup.fib_tab": "FIBMOD",
 
   "item.fib_mod.fib_logo_mod": "FIB-LOGO",
+  "item.fib_mod.canned_mushrooms": "canned Mushrooms",
+  "item.fib_mod.spring_and_autumn_intestines": "Spring And Autumn Intestines",
+  "item.fib_mod.wild_dog_milk": "Wild Dog Milk",
+  "item.fib_mod.solar_panel_controller": "Solar Panel Controller",
+
 
   "block.fib_mod.ice_maker": "ice maker",
   "block.fib_mod.radio_station": "radio station",
@@ -18,6 +23,15 @@
   "block.fib_mod.vault_gate": "Vault Gate",
   "block.fib_mod.chain_link_fence": "Chain Link Fence",
   "block.fib_mod.ru_meng_doll": "Ru Meng Doll",
+  "block.fib_mod.rotating_warning_light": "Rotating Warning Light",
+  "block.fib_mod.solar_panel": "Solar Panel",
+  "item.fib_mod.ru_meng_doll.preset": "Preset: %s",
+
+  "sounds.fib_mod.block_place": "Block:Place",
+  "sounds.fib_mod.block_break": "Block:break",
+  "sounds.fib_mod.block_hit": "Block:hit",
+  "sounds.fib_mod.block_step": "Step",
+  "sounds.fib_mod.block_fall": "Fall",
 
 
 

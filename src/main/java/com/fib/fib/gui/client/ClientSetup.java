@@ -1,14 +1,17 @@
 package com.fib.fib.gui.client;
 
 import com.fib.fib.FIBMod;
+import com.fib.fib.client.render.RuMengDollBlockEntityRenderer;
 import com.fib.fib.gui.container.screen.corpse.Corpse1Screen;
 import com.fib.fib.gui.container.screen.corpse.Corpse2Screen;
 import com.fib.fib.gui.container.screen.CrateScreen;
 import com.fib.fib.gui.container.screen.TrashCanScreen;
+import com.fib.fib.init.ModBlockEntities;
 import com.fib.fib.init.ModMenuTypes;
 import com.fib.fib.gui.container.screen.IceMakerScreen;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -37,6 +40,17 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         registerScreens();
+    }
+
+    /**
+     * 注册方块实体渲染器。
+     */
+    @SubscribeEvent
+    public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(
+                ModBlockEntities.RU_MENG_DOLL_BE.get(),
+                RuMengDollBlockEntityRenderer::new
+        );
     }
 
     /**

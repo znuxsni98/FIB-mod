@@ -3,7 +3,9 @@ package com.fib.fib.init.block;
 import com.fib.fib.FIBMod;
 import com.fib.fib.init.block.custom.corpse.*;
 import com.fib.fib.init.block.custom.*;
+import com.fib.fib.init.item.custom.DollBlockItem;
 import com.fib.fib.init.item.ModItems;
+import com.fib.fib.init.sound.ModSounds;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -59,7 +61,13 @@ public class ModBlocks {
             registryBlock("chain_link_fence", () ->new Chain_Link_Fence(BlockBehaviour.Properties.of().noOcclusion()));
 
       public static final RegistryObject<Block> RU_MENG_DOLL =
-            registryBlock("ru_meng_doll", () ->new Ru_Meng_Doll(BlockBehaviour.Properties.of().noOcclusion()));
+            registryDollBlock("ru_meng_doll", () ->new Ru_Meng_Doll(BlockBehaviour.Properties.of().noOcclusion().sound(ModSounds.BLOCK_SOUND)));
+
+      public static final RegistryObject<Block> ROTATING_WARNING_LIGHT =
+            registryDollBlock("rotating_warning_light", () ->new Rotating_Warning_Light(BlockBehaviour.Properties.of().noOcclusion()));
+
+    public static final RegistryObject<Block> SOLAR_PANEL =
+            registryDollBlock("solar_panel", () ->new Solar_Panel(BlockBehaviour.Properties.of().noOcclusion()));
 
 
 
@@ -72,6 +80,20 @@ public class ModBlocks {
         registerBlockItems(name, blocks);
         return blocks;
     }
+
+    /**
+     * 玩偶方块专用注册：物品使用 DollBlockItem，从而支持读取 NBT 里的预设名称/描述。
+     */
+    private static <T extends Block> void registerDollBlockItems(String name, RegistryObject<T> block) {
+        ModItems.ITEMS.register(name, () -> new DollBlockItem(block.get(), new Item.Properties()));
+    }
+
+    private static <T extends Block> RegistryObject<T> registryDollBlock(String name, Supplier<T> block) {
+        RegistryObject<T> blocks = BLOCKS.register(name, block);
+        registerDollBlockItems(name, blocks);
+        return blocks;
+    }
+    //
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

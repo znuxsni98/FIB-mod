@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "fib_mod:rotating_warning_light"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "fib_mod:blocks/rotating_warning_light"
+}

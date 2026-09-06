@@ -20,7 +20,12 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("itemGroup.fib_tab"))
                     .displayItems((pParameters, pOutput) -> {
 
-                        //pOutput.accept(ModItems.物品.get());
+                        pOutput.accept(ModItems.CANNED_MUSHROOMS.get());
+                        pOutput.accept(ModItems.SPRING_AND_AUTUMN_INTESTINES.get());
+                        pOutput.accept(ModItems.WILD_DOG_MILK.get());
+                        pOutput.accept(ModItems.SOLAR_PANEL_CONTROLLER.get());
+
+
                         pOutput.accept(ModBlocks.ICE_MAKER.get());
                         pOutput.accept(ModBlocks.RADIO_STATION.get());
                         pOutput.accept(ModBlocks.BOWL_BLOCK.get());
@@ -35,6 +40,8 @@ public class ModCreativeModeTabs {
                         pOutput.accept(ModBlocks.VAULT_GATE.get());
                         pOutput.accept(ModBlocks.CHAIN_LINK_FENCE.get());
                         pOutput.accept(ModBlocks.RU_MENG_DOLL.get());
+                        pOutput.accept(ModBlocks.ROTATING_WARNING_LIGHT.get());
+                        pOutput.accept(ModBlocks.SOLAR_PANEL.get());
                     }).build());
 
     public static void register(IEventBus eventBus) {

@@ -1,7 +1,6 @@
 {
 	"format_version": "1.9.0",
 	"credit": "Made with Blockbench",
-	"render_type": "cutout_mipped",
 	"texture_size": [32, 32],
 	"textures": {
 		"0": "fib_mod:block/chain_link_fence",

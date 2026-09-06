@@ -1,21 +1,7 @@
 {
-  "forge_marker": 1,
   "variants": {
-    "rotation=0":  { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 0}] } },
-    "rotation=1":  { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 22.5}] } },
-    "rotation=2":  { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 45}] } },
-    "rotation=3":  { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 67.5}] } },
-    "rotation=4":  { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 90}] } },
-    "rotation=5":  { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 112.5}] } },
-    "rotation=6":  { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 135}] } },
-    "rotation=7":  { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 157.5}] } },
-    "rotation=8":  { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 180}] } },
-    "rotation=9":  { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 202.5}] } },
-    "rotation=10": { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 225}] } },
-    "rotation=11": { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 247.5}] } },
-    "rotation=12": { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 270}] } },
-    "rotation=13": { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 292.5}] } },
-    "rotation=14": { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 315}] } },
-    "rotation=15": { "model": "fib_mod:block/ru_meng_doll", "transform": { "rotation": [{"y": 337.5}] } }
+    "": {
+      "model": "fib_mod:block/ru_meng_doll"
+    }
   }
 }

@@ -14,5 +14,6 @@ public class ModItemModelsProvider extends ItemModelProvider {
     @Override
     protected void registerModels() {
         basicItem(ModItems.FIB_LOGO_MOD.get());
+        basicItem(ModItems.SPRING_AND_AUTUMN_INTESTINES.get());
     }
 }

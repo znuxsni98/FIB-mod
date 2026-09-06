@@ -1,0 +1,13 @@
+{
+  "multipart": [
+    { "when": { "facing": "north" }, "apply": { "model": "fib_mod:block/solar_panel" } },
+    { "when": { "facing": "south" }, "apply": { "model": "fib_mod:block/solar_panel", "y": 180 } },
+    { "when": { "facing": "west"  }, "apply": { "model": "fib_mod:block/solar_panel", "y": 270 } },
+    { "when": { "facing": "east"  }, "apply": { "model": "fib_mod:block/solar_panel", "y": 90 } },
+
+    { "when": { "has_controller": "true", "facing": "north" }, "apply": { "model": "fib_mod:block/solar_panel_controller" } },
+    { "when": { "has_controller": "true", "facing": "south" }, "apply": { "model": "fib_mod:block/solar_panel_controller", "y": 180 } },
+    { "when": { "has_controller": "true", "facing": "west"  }, "apply": { "model": "fib_mod:block/solar_panel_controller", "y": 270 } },
+    { "when": { "has_controller": "true", "facing": "east"  }, "apply": { "model": "fib_mod:block/solar_panel_controller", "y": 90 } }
+  ]
+}

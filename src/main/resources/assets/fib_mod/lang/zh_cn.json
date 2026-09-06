@@ -2,6 +2,11 @@
   "itemGroup.fib_tab": "§c菌染亵渎MOD",
 
   "item.fib_mod.fib_logo_mod": "FIB-LOGO",
+  "item.fib_mod.canned_mushrooms": "真菌罐头",
+  "item.fib_mod.spring_and_autumn_intestines": "春秋肠",
+  "item.fib_mod.wild_dog_milk": "野生狗奶",
+  "item.fib_mod.solar_panel_controller": "太阳能板控制器",
+
 
   "block.fib_mod.ice_maker": "制冰机-配方未完成",
   "block.fib_mod.radio_station": "电台",
@@ -18,6 +23,15 @@
   "block.fib_mod.vault_gate": "保险库大门",
   "block.fib_mod.chain_link_fence": "铁丝网围栏-未完成",
   "block.fib_mod.ru_meng_doll": "如梦玩偶",
+  "block.fib_mod.rotating_warning_light": "旋转警示灯",
+  "block.fib_mod.solar_panel": "太阳能板",
+  "item.fib_mod.ru_meng_doll.preset": "预设：%s",
+
+  "sounds.fib_mod.block_place": "方块：被放置",
+  "sounds.fib_mod.block_break": "方块：被破坏",
+  "sounds.fib_mod.block_hit": "方块：损坏中",
+  "sounds.fib_mod.block_step": "脚部声",
+  "sounds.fib_mod.block_fall": "摔落",
 
 
 
@@ -44,5 +58,5 @@
   "be.title.corpse1": "尸体",
   "be.title.ice_maker": "制冰机 未完成",
   "be.title.crate": "板条箱",
-  "be.title.trash_can": "板条箱"
+  "be.title.trash_can": "垃圾桶"
 }

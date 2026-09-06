@@ -7,6 +7,7 @@ import com.fib.fib.init.Villager.ModVillager;
 import com.fib.fib.init.block.ModBlocks;
 import com.fib.fib.init.item.ModCreativeModeTabs;
 import com.fib.fib.init.item.ModItems;
+import com.fib.fib.init.sound.ModSounds;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.block.Blocks;
@@ -40,11 +41,11 @@ public class FIBMod {
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
-        ModBlockEntities.register(modEventBus);
+        ModSounds.register(modEventBus);
 
+        ModBlockEntities.register(modEventBus);
         ModVillager.register(modEventBus);
         ModMenuTypes.register(modEventBus);
-
 //        ModEntities.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in
