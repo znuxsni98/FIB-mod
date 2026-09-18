@@ -1,10 +1,8 @@
 package com.fib.fib.init;
 
 import com.fib.fib.FIBMod;
-//import com.fib.fib.blockentity.OilDrumBlockEntity;
 import com.fib.fib.blockentity.*;
-import com.fib.fib.blockentity.corpse.Corpse1BlockEntity;
-import com.fib.fib.blockentity.corpse.Corpse2BlockEntity;
+import com.fib.fib.blockentity.corpse.*;
 import com.fib.fib.init.block.ModBlocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -87,6 +85,16 @@ public class ModBlockEntities {
                     BlockEntityType.Builder.of(
                             SolarPanelBlockEntity::new,
                             ModBlocks.SOLAR_PANEL.get()
+                    ).build(null)
+            );
+
+    public static final RegistryObject<BlockEntityType<RTGBlockEntity>>
+            RTG_BE =
+            BLOCK_ENTITIES.register("rtg_be", () ->
+
+                    BlockEntityType.Builder.of(
+                            RTGBlockEntity::new,
+                            ModBlocks.RTG.get()
                     ).build(null)
             );
 

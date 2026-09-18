@@ -38,6 +38,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
         customHorizontalBlock(ModBlocks.RADIO_STATION);
         customHorizontalBlock(ModBlocks.SCIENTISTS_EXPERIMENTAL_PLATFORM);
         customHorizontalBlock(ModBlocks.ENGINEER_WORKBENCH);
+        customHorizontalBlock(ModBlocks.RTG);
 
         //6向
         customDirectionalBlock(ModBlocks.ROTATING_WARNING_LIGHT);

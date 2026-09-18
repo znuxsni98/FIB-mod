@@ -42,7 +42,7 @@ public class Oil_Drum extends Block {
     public static final VoxelShape SHAPE_S =Stream.of(Block.box(5.0052, 0, 0.75216, 11.0052, 20, 15.25216), Block.box(0.75, 0, 5, 15.25, 20, 11), Block.box(5.52817, 0, 0.53553, 11.52817, 20, 15.03553), Block.box(5, 0, 0.75, 11, 20, 15.25)).reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR)).get();
     public static final VoxelShape SHAPE_W =Stream.of(Block.box(5.0052, 0, 0.75216, 11.0052, 20, 15.25216), Block.box(0.75, 0, 5, 15.25, 20, 11), Block.box(5.52817, 0, 0.53553, 11.52817, 20, 15.03553), Block.box(5, 0, 0.75, 11, 20, 15.25)).reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR)).get();
     public static final VoxelShape SHAPE_E =Stream.of(Block.box(5.0052, 0, 0.75216, 11.0052, 20, 15.25216), Block.box(0.75, 0, 5, 15.25, 20, 11), Block.box(5.52817, 0, 0.53553, 11.52817, 20, 15.03553), Block.box(5, 0, 0.75, 11, 20, 15.25)).reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR)).get();
-    public static final VoxelShape SHAPE_N =Stream.of(Block.box(5.0052, 0, 0.75216, 11.0052, 20, 15.25216), Block.box(0.75, 0, 5, 15.25, 20, 11), Block.box(5.52817, 0, 0.53553, 11.52817, 20, 15.03553), Block.box(5, 0, 0.75, 11, 20, 15.25)).reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR)).get();;
+    public static final VoxelShape SHAPE_N =Stream.of(Block.box(5.0052, 0, 0.75216, 11.0052, 20, 15.25216), Block.box(0.75, 0, 5, 15.25, 20, 11), Block.box(5.52817, 0, 0.53553, 11.52817, 20, 15.03553), Block.box(5, 0, 0.75, 11, 20, 15.25)).reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR)).get();
     public Oil_Drum(Properties pProperties) {
         super(pProperties);
         this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH));

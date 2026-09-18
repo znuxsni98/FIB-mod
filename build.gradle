@@ -109,6 +109,10 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 processResources {
+    // src/main/resources 与 src/generated/resources 会出现同名资源（如 datagen 自动生成的物品模型），
+    // EXCLUDE = 保留先出现的 src/main/resources 版本，跳过生成的重复文件。
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
     var replaceProperties = [
             minecraft_version          : minecraft_version,
             minecraft_version_range    : minecraft_version_range,

@@ -42,6 +42,7 @@ public class ModCreativeModeTabs {
                         pOutput.accept(ModBlocks.RU_MENG_DOLL.get());
                         pOutput.accept(ModBlocks.ROTATING_WARNING_LIGHT.get());
                         pOutput.accept(ModBlocks.SOLAR_PANEL.get());
+                        pOutput.accept(ModBlocks.RTG.get());
                     }).build());
 
     public static void register(IEventBus eventBus) {

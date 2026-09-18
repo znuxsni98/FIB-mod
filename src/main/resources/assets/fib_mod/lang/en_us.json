@@ -25,6 +25,7 @@
   "block.fib_mod.ru_meng_doll": "Ru Meng Doll",
   "block.fib_mod.rotating_warning_light": "Rotating Warning Light",
   "block.fib_mod.solar_panel": "Solar Panel",
+  "block.fib_mod.rtg": "RTG",
   "item.fib_mod.ru_meng_doll.preset": "Preset: %s",
 
   "sounds.fib_mod.block_place": "Block:Place",
@@ -58,5 +59,26 @@
   "be.title.corpse2": "corpse",
   "be.title.ice_maker": "ice_maker",
   "be.title.crate": "Crate",
-  "be.title.trash_can": "Trash Can"
+  "be.title.trash_can": "Trash Can",
+
+
+  "fib_mod.gui.goggles.solar_panel.stats": "Solar Panel Status:",
+  "fib_mod.gui.goggles.solar_panel.slave": "Slave panel (no controller): supplied by an adjacent controller panel",
+  "fib_mod.gui.goggles.solar_panel.array": "Array: %s lit / %s total",
+  "fib_mod.gui.goggles.rtg.stats": "RTG Status:",
+  "fib_mod.gui.goggles.generation": "Generation:",
+  "fib_mod.gui.goggles.temperature": "Temperature:",
+  "fib_mod.gui.goggles.facing": "Facing:",
+  "fib_mod.gui.goggles.energy": "Energy:",
+
+  "fib_mod.generic.unit.fe_per_tick": "FE/t",
+  "fib_mod.generic.unit.fe": "FE",
+  "fib_mod.generic.unit.celsius": "°C",
+
+  "fib_mod.direction.north": "North",
+  "fib_mod.direction.south": "South",
+  "fib_mod.direction.west": "West",
+  "fib_mod.direction.east": "East",
+  "fib_mod.direction.up": "Up",
+  "fib_mod.direction.down": "Down"
 }

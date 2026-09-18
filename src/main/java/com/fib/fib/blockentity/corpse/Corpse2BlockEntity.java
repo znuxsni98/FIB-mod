@@ -31,7 +31,7 @@ public class Corpse2BlockEntity extends RandomizableContainerBlockEntity impleme
 
 
     public Corpse2BlockEntity(BlockPos pPos, BlockState pBlockState) {
-        super(ModBlockEntities.CRATE_BE.get(), pPos, pBlockState);
+        super(ModBlockEntities.CORPSE2_BE.get(), pPos, pBlockState);
     }
 
 

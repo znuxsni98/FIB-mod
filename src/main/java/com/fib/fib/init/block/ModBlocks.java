@@ -60,14 +60,19 @@ public class ModBlocks {
       public static final RegistryObject<Block> CHAIN_LINK_FENCE =
             registryBlock("chain_link_fence", () ->new Chain_Link_Fence(BlockBehaviour.Properties.of().noOcclusion()));
 
+      public static final RegistryObject<Block> ROTATING_WARNING_LIGHT =
+            registryBlock("rotating_warning_light", () ->new Rotating_Warning_Light(BlockBehaviour.Properties.of().noOcclusion()));
+
+      public static final RegistryObject<Block> SOLAR_PANEL =
+            registryBlock("solar_panel", () ->new Solar_Panel(BlockBehaviour.Properties.of().noOcclusion()));
+
+    public static final RegistryObject<Block> RTG =
+            registryBlock("rtg", () ->new RTG(BlockBehaviour.Properties.of().noOcclusion()));
+
+
       public static final RegistryObject<Block> RU_MENG_DOLL =
             registryDollBlock("ru_meng_doll", () ->new Ru_Meng_Doll(BlockBehaviour.Properties.of().noOcclusion().sound(ModSounds.BLOCK_SOUND)));
 
-      public static final RegistryObject<Block> ROTATING_WARNING_LIGHT =
-            registryDollBlock("rotating_warning_light", () ->new Rotating_Warning_Light(BlockBehaviour.Properties.of().noOcclusion()));
-
-    public static final RegistryObject<Block> SOLAR_PANEL =
-            registryDollBlock("solar_panel", () ->new Solar_Panel(BlockBehaviour.Properties.of().noOcclusion()));
 
 
 

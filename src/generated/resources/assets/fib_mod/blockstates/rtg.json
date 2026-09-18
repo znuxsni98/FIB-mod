@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "fib_mod:block/rtg",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "fib_mod:block/rtg"
+    },
+    "facing=south": {
+      "model": "fib_mod:block/rtg",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "fib_mod:block/rtg",
+      "y": 270
+    }
+  }
+}

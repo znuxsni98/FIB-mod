@@ -25,6 +25,7 @@
   "block.fib_mod.ru_meng_doll": "如梦玩偶",
   "block.fib_mod.rotating_warning_light": "旋转警示灯",
   "block.fib_mod.solar_panel": "太阳能板",
+  "block.fib_mod.rtg": "RTG-同位素热发电机",
   "item.fib_mod.ru_meng_doll.preset": "预设：%s",
 
   "sounds.fib_mod.block_place": "方块：被放置",
@@ -32,7 +33,6 @@
   "sounds.fib_mod.block_hit": "方块：损坏中",
   "sounds.fib_mod.block_step": "脚部声",
   "sounds.fib_mod.block_fall": "摔落",
-
 
 
   "entity.minecraft.villager.tacz_merchant": "军火商",
@@ -58,5 +58,26 @@
   "be.title.corpse1": "尸体",
   "be.title.ice_maker": "制冰机 未完成",
   "be.title.crate": "板条箱",
-  "be.title.trash_can": "垃圾桶"
+  "be.title.trash_can": "垃圾桶",
+
+
+  "fib_mod.gui.goggles.solar_panel.stats": "太阳能板状态：",
+  "fib_mod.gui.goggles.solar_panel.slave": "从板（无控制器）：由相邻同朝向的控制器板并网发电",
+  "fib_mod.gui.goggles.solar_panel.array": "阵列：受光 %s 块 / 共 %s 块",
+  "fib_mod.gui.goggles.rtg.stats": "RTG 状态：",
+  "fib_mod.gui.goggles.generation": "发电量：",
+  "fib_mod.gui.goggles.temperature": "温度：",
+  "fib_mod.gui.goggles.facing": "朝向：",
+  "fib_mod.gui.goggles.energy": "储能：",
+
+  "fib_mod.generic.unit.fe_per_tick": "FE/t",
+  "fib_mod.generic.unit.fe": "FE",
+  "fib_mod.generic.unit.celsius": "°C",
+
+  "fib_mod.direction.north": "北",
+  "fib_mod.direction.south": "南",
+  "fib_mod.direction.west": "西",
+  "fib_mod.direction.east": "东",
+  "fib_mod.direction.up": "上",
+  "fib_mod.direction.down": "下"
 }

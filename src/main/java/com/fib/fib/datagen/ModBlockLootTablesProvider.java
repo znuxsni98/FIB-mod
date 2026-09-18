@@ -35,6 +35,7 @@ public class ModBlockLootTablesProvider extends BlockLootSubProvider {
         dropSelf(ModBlocks.CHAIN_LINK_FENCE.get());
         dropSelf(ModBlocks.RU_MENG_DOLL.get());
         dropSelf(ModBlocks.ROTATING_WARNING_LIGHT.get());
+        dropSelf(ModBlocks.RTG.get());
     }
 
     @Override
