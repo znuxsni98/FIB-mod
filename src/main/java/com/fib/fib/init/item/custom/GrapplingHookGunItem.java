@@ -31,6 +31,9 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkHooks;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -75,6 +78,21 @@ public class GrapplingHookGunItem extends Item {
         private final String translationKey;
 
         MiningMode(String translationKey) {
+            this.translationKey = translationKey;
+        }
+
+        public String getTranslationKey() {
+            return translationKey;
+        }
+    }
+
+    public enum GrappleMode {
+        STABLE("fib_mod.grapple_mode.stable"),
+        PULL_TOWARDS("fib_mod.grapple_mode.pull_towards");
+
+        private final String translationKey;
+
+        GrappleMode(String translationKey) {
             this.translationKey = translationKey;
         }
 
@@ -227,6 +245,42 @@ public class GrapplingHookGunItem extends Item {
         return upgrades.getStackInSlot(5).getItem() instanceof MiningModuleItem;
     }
 
+    public static boolean hasGrappleModule(ItemStack stack) {
+        ItemStackHandler upgrades = getUpgradesHandler(stack);
+        return upgrades.getStackInSlot(5).getItem() instanceof com.fib.fib.init.item.custom.hook.GrappleModuleItem;
+    }
+
+    public static final String TAG_GRAPPLE_MODE = "GrappleMode";
+
+    public static GrappleMode getGrappleMode(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        if (tag != null && tag.contains(TAG_GRAPPLE_MODE)) {
+            int idx = tag.getInt(TAG_GRAPPLE_MODE);
+            GrappleMode[] values = GrappleMode.values();
+            if (idx >= 0 && idx < values.length) {
+                return values[idx];
+            }
+        }
+        return GrappleMode.STABLE;
+    }
+
+    public static void setGrappleMode(ItemStack stack, GrappleMode mode) {
+        stack.getOrCreateTag().putInt(TAG_GRAPPLE_MODE, mode.ordinal());
+    }
+
+    public static void cycleGrappleMode(ItemStack stack, Player player) {
+        if (!hasGrappleModule(stack)) {
+            player.displayClientMessage(Component.translatable("fib_mod.hook.need_grapple_module").withStyle(ChatFormatting.RED), true);
+            player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.DISPENSER_FAIL, SoundSource.PLAYERS, 0.8f, 1.2f);
+            return;
+        }
+        GrappleMode current = getGrappleMode(stack);
+        GrappleMode next = (current == GrappleMode.STABLE) ? GrappleMode.PULL_TOWARDS : GrappleMode.STABLE;
+        setGrappleMode(stack, next);
+        player.displayClientMessage(Component.translatable("fib_mod.hook.grapple_mode_switched", Component.translatable(next.getTranslationKey())).withStyle(ChatFormatting.GOLD), true);
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.LEVER_CLICK, SoundSource.PLAYERS, 0.8f, 1.6f);
+    }
+
     // ==================== 模式切换 ====================
 
     public static void cycleMode(ItemStack stack, Player player) {
@@ -338,14 +392,28 @@ public class GrapplingHookGunItem extends Item {
 
         // 2. 普通右键：活动钩爪交互
         if (!activeHooks.isEmpty()) {
-            // 双钩模块检测：若主钩已命中且次钩未发射，发射第二枚钩爪
+            // 双钩模块检测：若主钩已命中且次钩未发射
             if (hasDualHookModule(stack) && activeHooks.size() == 1) {
                 GrapplingHookEntity primaryHook = activeHooks.get(0);
                 if (primaryHook.isHooked()) {
-                    if (shootHook(level, player, stack, hand, primaryHook)) {
-                        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+                    // 准星射线判定：若玩家精确指向一个未钩取的新方块目标，发射第2根钩爪；
+                    // 若玩家指向空旷虚空、空气或朝向第1根钩爪方向，则直接触发单钩牵引拉取！
+                    Vec3 eye = player.getEyePosition();
+                    Vec3 look = player.getViewVector(1.0F);
+                    double range = hasPressurizedModule(stack) ? 24.0 : 16.0;
+                    Vec3 reach = eye.add(look.scale(range));
+                    BlockHitResult bHit = level.clip(new ClipContext(eye, reach, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+
+                    if (bHit.getType() == HitResult.Type.BLOCK && bHit.getLocation().distanceTo(primaryHook.getAnchorPos()) >= 1.5) {
+                        if (shootHook(level, player, stack, hand, primaryHook)) {
+                            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+                        }
+                        return InteractionResultHolder.fail(stack);
                     }
-                    return InteractionResultHolder.fail(stack);
+                    if (!level.isClientSide) {
+                        primaryHook.startPulling();
+                    }
+                    return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
                 }
             }
 
@@ -415,7 +483,7 @@ public class GrapplingHookGunItem extends Item {
         boolean pressurized = hasPressurizedModule(stack);
         boolean dualHook = hasDualHookModule(stack);
 
-        float energyCost = 1.0f;
+        float energyCost = 0.10f; // 调为现在的十分之一（原 1.0f）
         if (pressurized) energyCost *= 2.0f;
         if (dualHook) energyCost *= 1.5f;
 
@@ -541,6 +609,10 @@ public class GrapplingHookGunItem extends Item {
 
         if (hasMiningModule(stack)) {
             tooltip.add(Component.translatable("fib_mod.hook.mining_tooltip", Component.translatable(getMiningMode(stack).getTranslationKey())).withStyle(ChatFormatting.YELLOW));
+        }
+
+        if (hasGrappleModule(stack)) {
+            tooltip.add(Component.translatable("fib_mod.hook.grapple_tooltip", Component.translatable(getGrappleMode(stack).getTranslationKey())).withStyle(ChatFormatting.GOLD));
         }
 
         ItemStackHandler upgrades = getUpgradesHandler(stack);

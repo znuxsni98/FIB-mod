@@ -23,9 +23,18 @@ public class HookMiningTogglePacket {
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
             if (player != null) {
-                ItemStack mainHand = player.getMainHandItem();
-                if (mainHand.getItem() instanceof GrapplingHookGunItem) {
-                    GrapplingHookGunItem.cycleMiningMode(mainHand, player);
+                ItemStack held = player.getMainHandItem();
+                if (!(held.getItem() instanceof GrapplingHookGunItem)) {
+                    held = player.getOffhandItem();
+                }
+                if (held.getItem() instanceof GrapplingHookGunItem) {
+                    if (GrapplingHookGunItem.hasGrappleModule(held)) {
+                        GrapplingHookGunItem.cycleGrappleMode(held, player);
+                    } else if (GrapplingHookGunItem.hasMiningModule(held)) {
+                        GrapplingHookGunItem.cycleMiningMode(held, player);
+                    } else {
+                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("fib_mod.hook.need_sub_module").withStyle(net.minecraft.ChatFormatting.RED), true);
+                    }
                 }
             }
         });

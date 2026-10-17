@@ -64,6 +64,9 @@ public class ModItems {
     public static final RegistryObject<Item> MINING_MODULE =
             ITEMS.register("mining_module", () -> new com.fib.fib.init.item.custom.hook.MiningModuleItem(new Item.Properties().stacksTo(1)));
 
+    public static final RegistryObject<Item> GRAPPLE_MODULE =
+            ITEMS.register("grapple_module", () -> new com.fib.fib.init.item.custom.hook.GrappleModuleItem(new Item.Properties().stacksTo(1)));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

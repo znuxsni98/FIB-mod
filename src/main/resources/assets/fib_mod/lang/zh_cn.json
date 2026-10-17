@@ -123,6 +123,7 @@
   "item.fib_mod.dual_hook_module": "双钩模块",
   "item.fib_mod.item_protection_module": "掉落物保护模块",
   "item.fib_mod.mining_module": "挖掘模块",
+  "item.fib_mod.grapple_module": "抓取模块",
 
   "entity.fib_mod.grappling_hook": "钩爪",
 
@@ -141,6 +142,7 @@
   "fib_mod.hook_upgrade.dual_hook_module.desc": "允许发射第 2 枚钩爪建立拴绳连接（最远 20 格）。激活期间无法钩掉落物，挖掘模块停用。",
   "fib_mod.hook_upgrade.item_protection_module.desc": "保护牵引中的掉落物免遭岩浆、火焰、仙人掌及虚空销毁。",
   "fib_mod.hook_upgrade.mining_module.desc": "解锁 [G] 键挖掘模式（三态切换）。远程破坏方块并将产物存入内置 16 格仓，对生物持续磨血。",
+  "fib_mod.hook_upgrade.grapple_module.desc": "安装于钩爪模块槽，按 [G] 键切换稳固模式（自身固定不动并极大增强拉怪力，遇方块等不可拉取物立即收回）与拉向模式（除小碰撞箱生物外一律拉向目标）。",
 
   "fib_mod.hook_mode.pull": "牵引模式",
   "fib_mod.hook_mode.climb": "攀岩模式",
@@ -148,12 +150,17 @@
   "fib_mod.mining_mode.off": "关闭",
   "fib_mod.mining_mode.all": "开启（破坏可挖+可掉落）",
   "fib_mod.mining_mode.breakable": "开启（仅破坏可挖）",
+  "fib_mod.grapple_mode.stable": "稳固模式 (自身不动)",
+  "fib_mod.grapple_mode.pull_towards": "拉向模式 (拉向目标)",
 
   "fib_mod.hook.need_smart_module": "需要安装「智能升级模块」才能切换工作模式！",
   "fib_mod.hook.mode_switched": "钩爪模式切换为：%s",
   "fib_mod.hook.need_mining_module": "需要安装「挖掘模块」才能开启挖掘模式！",
   "fib_mod.hook.dual_hook_blocks_mining": "双钩模块激活中，挖掘模块已被禁用！",
   "fib_mod.hook.mining_mode_switched": "挖掘模式切换为：%s",
+  "fib_mod.hook.grapple_mode_switched": "抓取模式切换为：%s",
+  "fib_mod.hook.need_sub_module": "需要安装「抓取模块」或「挖掘模块」才能使用 [G] 键切换功能！",
+  "fib_mod.hook.need_grapple_module": "需要安装「抓取模块」！",
   "fib_mod.hook.no_energy": "能量不足！请使用机械动力背罐补充压缩空气。",
   "fib_mod.hook.charged": "从背罐转换了 %s 点能量！",
   "fib_mod.hook.retracted_targeted": "已收回对准的钩爪",
@@ -162,6 +169,7 @@
   "fib_mod.hook.energy_tooltip": "能量储备：%s / %s",
   "fib_mod.hook.mode_tooltip": "当前模式：%s",
   "fib_mod.hook.mining_tooltip": "挖掘状态：%s",
+  "fib_mod.hook.grapple_tooltip": "抓取模式：%s",
   "fib_mod.hook.upgrades_header": "已安装模块：",
 
   "fib_mod.gui.grappling_hook.title": "钩爪枪改装与存储",

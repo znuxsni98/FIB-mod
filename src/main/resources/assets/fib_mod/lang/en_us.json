@@ -124,6 +124,7 @@
   "item.fib_mod.dual_hook_module": "Dual Hook Module",
   "item.fib_mod.item_protection_module": "Item Protection Module",
   "item.fib_mod.mining_module": "Mining Module",
+  "item.fib_mod.grapple_module": "Grapple Module",
 
   "entity.fib_mod.grappling_hook": "Grappling Hook",
 
@@ -142,6 +143,7 @@
   "fib_mod.hook_upgrade.dual_hook_module.desc": "Allows firing a 2nd hook to create a tether up to 20 blocks. Ignores item drops and disables mining.",
   "fib_mod.hook_upgrade.item_protection_module.desc": "Protects hooked items from fire, lava, cactus and void.",
   "fib_mod.hook_upgrade.mining_module.desc": "Unlocks [G] mining mode. Remotely drills blocks into 16-slot storage and damages living targets.",
+  "fib_mod.hook_upgrade.grapple_module.desc": "Installed in Hook Module Slot. [G] toggles Stable Mode (player stays still, maximum pull on entities, immediately retracts on blocks) and Pull-to-Target Mode (pulls player to target unless tiny).",
 
   "fib_mod.hook_mode.pull": "Pull Mode",
   "fib_mod.hook_mode.climb": "Climb Mode",
@@ -149,12 +151,17 @@
   "fib_mod.mining_mode.off": "Off",
   "fib_mod.mining_mode.all": "All (Breakable + Drops)",
   "fib_mod.mining_mode.breakable": "Breakable Only",
+  "fib_mod.grapple_mode.stable": "Stable (Player Immobile)",
+  "fib_mod.grapple_mode.pull_towards": "Pull Towards (Pulls to Target)",
 
   "fib_mod.hook.need_smart_module": "Smart Upgrade Module required to switch modes!",
   "fib_mod.hook.mode_switched": "Hook mode switched to: %s",
   "fib_mod.hook.need_mining_module": "Mining Module required to toggle mining!",
   "fib_mod.hook.dual_hook_blocks_mining": "Dual Hook active: Mining Module is disabled!",
   "fib_mod.hook.mining_mode_switched": "Mining mode switched to: %s",
+  "fib_mod.hook.grapple_mode_switched": "Grapple mode switched to: %s",
+  "fib_mod.hook.need_sub_module": "Grapple Module or Mining Module required to use [G] key!",
+  "fib_mod.hook.need_grapple_module": "Grapple Module required!",
   "fib_mod.hook.no_energy": "Insufficient energy! Refill using a Create Copper Backtank.",
   "fib_mod.hook.charged": "Transferred %s energy from Backtank air!",
   "fib_mod.hook.retracted_targeted": "Retracted targeted hook",
@@ -163,6 +170,7 @@
   "fib_mod.hook.energy_tooltip": "Energy: %s / %s",
   "fib_mod.hook.mode_tooltip": "Mode: %s",
   "fib_mod.hook.mining_tooltip": "Mining: %s",
+  "fib_mod.hook.grapple_tooltip": "Grapple: %s",
   "fib_mod.hook.upgrades_header": "Installed Modules:",
 
   "fib_mod.gui.grappling_hook.title": "Grappling Hook Gun Customization",

@@ -206,6 +206,9 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     public void setRetracting() {
         setHookState(State.RETRACTING);
         noPhysics = true;
+        if (hookedEntity instanceof ItemEntity item) {
+            item.setNoGravity(false);
+        }
     }
 
     public void startPulling() {
@@ -346,6 +349,17 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         Vec3 nextPos = pos.add(getDeltaMovement());
         HitResult hitResult = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
 
+        // 拾取模式下，飞行中对附近的掉落物执行微引力磁吸锁定检测
+        if (GrapplingHookGunItem.getMode(gunStack) == GrapplingHookGunItem.Mode.PICKUP && !dualHook) {
+            AABB magnetBox = getBoundingBox().inflate(1.8);
+            List<ItemEntity> nearbyItems = level().getEntitiesOfClass(ItemEntity.class, magnetBox, Entity::isAlive);
+            if (!nearbyItems.isEmpty()) {
+                ItemEntity nearest = nearbyItems.get(0);
+                onHitEntity(new EntityHitResult(nearest));
+                return;
+            }
+        }
+
         if (hitResult.getType() != HitResult.Type.MISS) {
             onHit(hitResult);
         } else {
@@ -362,6 +376,13 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     protected void onHitBlock(BlockHitResult hitResult) {
         super.onHitBlock(hitResult);
         if (level().isClientSide) return;
+
+        // 抓取模块稳固模式判定：自身不动，遇不可拉取方块碰撞即收回
+        if (GrapplingHookGunItem.hasGrappleModule(gunStack) && GrapplingHookGunItem.getGrappleMode(gunStack) == GrapplingHookGunItem.GrappleMode.STABLE) {
+            level().playSound(null, getX(), getY(), getZ(), SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 0.8f, 1.2f);
+            setRetracting();
+            return;
+        }
 
         BlockPos pos = hitResult.getBlockPos();
         BlockState state = level().getBlockState(pos);
@@ -485,9 +506,31 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     private void tickHooked(Player shooter) {
         updateAnchorTarget();
 
+        double dist = position().distanceTo(shooter.position());
         // 超过绳索极限距离 32 格自动脱钩
-        if (position().distanceTo(shooter.position()) > 32.0) {
+        if (dist > 32.0) {
             setRetracting();
+            return;
+        }
+
+        // 终点悬停机制（Hanging / Suspension）：
+        // 若处于锚定方块附近（<= 2.2 格）且玩家未潜行下落，为玩家提供防坠落悬停支持
+        if (getTargetType() == TargetType.BLOCK && dist <= 2.2) {
+            if (!shooter.isShiftKeyDown()) {
+                Vec3 curMotion = shooter.getDeltaMovement();
+                // 仅抵消重力下坠（Vy <= 0 时锁死为零，保持挂壁悬停，允许玩家跳跃翻越）
+                if (curMotion.y < 0) {
+                    shooter.setDeltaMovement(curMotion.x * 0.8, 0.0, curMotion.z * 0.8);
+                    shooter.hurtMarked = true;
+                    if (shooter instanceof ServerPlayer serverPlayer) {
+                        ModMessages.sendToPlayer(new SyncPlayerMotionPacket(new Vec3(curMotion.x * 0.8, 0.0, curMotion.z * 0.8)), serverPlayer);
+                    }
+                }
+                shooter.resetFallDistance();
+            } else {
+                // 按潜行键解除悬停并收回
+                setRetracting();
+            }
         }
     }
 
@@ -508,8 +551,8 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     private void tickPulling(Player shooter) {
         updateAnchorTarget();
 
-        // 牵引能量持续消耗（0.05/tick，加压模块下 0.1/tick）
-        float energyCost = pressurized ? 0.10f : 0.05f;
+        // 牵引能量持续消耗（0.005/tick，加压模块下 0.010/tick，调为原速度十分之一）
+        float energyCost = pressurized ? 0.010f : 0.005f;
         ItemStack held = shooter.getMainHandItem();
         if (held.getItem() instanceof GrapplingHookGunItem) {
             if (!GrapplingHookGunItem.consumeEnergy(held, energyCost)) {
@@ -529,9 +572,11 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             Vec3 playerPos = shooter.position();
             double distance = playerPos.distanceTo(anchor);
 
-            // 停在方块前 1.5 格，防止穿模卡死
-            if (distance <= 1.5) {
+            // 停在方块前 1.8 格，切入悬停挂壁状态，防止穿模卡死
+            if (distance <= 1.8) {
                 setHookState(State.HOOKED);
+                shooter.setDeltaMovement(shooter.getDeltaMovement().scale(0.1));
+                shooter.resetFallDistance();
                 return;
             }
 
@@ -561,53 +606,83 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
 
         // B. 生物牵引
         else if (tType == TargetType.LIVING && hookedEntity instanceof LivingEntity target) {
+            if (!target.isAlive() || target.isRemoved()) {
+                setRetracting();
+                return;
+            }
+
             double playerVol = shooter.getBbWidth() * shooter.getBbWidth() * shooter.getBbHeight();
             double targetVol = target.getBbWidth() * target.getBbWidth() * target.getBbHeight();
-            float pullSpeed = pressurized ? 0.9f : 0.6f;
+            boolean isHuge = targetVol >= 1.5 * playerVol;
+            boolean isHighHealth = target.getMaxHealth() >= 150.0f;
+            boolean isHeavyBoss = isHuge || isHighHealth;
 
-            if (targetVol < playerVol) {
-                // 目标体积小于玩家：目标单向拉向玩家
-                Vec3 dir = shooter.position().subtract(target.position()).normalize();
-                target.setDeltaMovement(dir.scale(0.8));
+            boolean hasGrapple = GrapplingHookGunItem.hasGrappleModule(gunStack);
+            GrapplingHookGunItem.GrappleMode gMode = GrapplingHookGunItem.getGrappleMode(gunStack);
+
+            float pullSpeed = pressurized ? 0.95f : 0.65f;
+            Vec3 toTarget = target.position().subtract(shooter.position()).normalize();
+            Vec3 toPlayer = shooter.position().subtract(target.position()).normalize();
+
+            if (hasGrapple && gMode == GrapplingHookGunItem.GrappleMode.STABLE) {
+                // 1. 抓取模块 - 稳固模式：自身绝对固定不动，极大增强将目标拉向玩家的能力
+                applyMotionToPlayer(shooter, Vec3.ZERO);
+                target.setDeltaMovement(toPlayer.scale(pullSpeed * 1.2).add(0, 0.16, 0));
                 target.hurtMarked = true;
+            } else if (hasGrapple && gMode == GrapplingHookGunItem.GrappleMode.PULL_TOWARDS) {
+                // 2. 抓取模块 - 拉向模式：除碰撞箱极小生物外，其余一律将玩家拉向目标
+                boolean isTiny = targetVol < 0.5 * playerVol;
+                if (isTiny) {
+                    target.setDeltaMovement(toPlayer.scale(pullSpeed * 1.0).add(0, 0.12, 0));
+                    target.hurtMarked = true;
+                } else {
+                    applyMotionToPlayer(shooter, toTarget.scale(pullSpeed));
+                }
             } else {
-                // 目标体积大于等于玩家：按最大生命值反比相向拉扯
-                float hpPlayer = Math.max(1.0f, shooter.getMaxHealth());
-                float hpTarget = Math.max(1.0f, target.getMaxHealth());
-                float totalHp = hpPlayer + hpTarget;
-
-                float playerRatio = hpTarget / totalHp;
-                float targetRatio = hpPlayer / totalHp;
-
-                Vec3 toTarget = target.position().subtract(shooter.position()).normalize();
-                Vec3 playerMotion = toTarget.scale(pullSpeed * playerRatio);
-                Vec3 targetMotion = toTarget.reverse().scale(pullSpeed * targetRatio);
-
-                applyMotionToPlayer(shooter, playerMotion);
-                target.setDeltaMovement(targetMotion);
-                target.hurtMarked = true;
+                // 3. 基础默认牵引逻辑
+                if (isHeavyBoss) {
+                    // 大怪 (>= 1.5倍玩家体型) 或 高血 (>= 150血)：稳定把白板玩家拉向怪物
+                    applyMotionToPlayer(shooter, toTarget.scale(pullSpeed));
+                    target.setDeltaMovement(target.getDeltaMovement().scale(0.8));
+                } else {
+                    // 普通中小型怪：大幅提高把怪拉向玩家的能力，施加轻微上抛防卡地面
+                    target.setDeltaMovement(toPlayer.scale(pullSpeed * 1.15).add(0, 0.18, 0));
+                    target.hurtMarked = true;
+                    applyMotionToPlayer(shooter, toTarget.scale(pullSpeed * 0.05));
+                }
             }
             shooter.resetFallDistance();
+            if (tickCount % 6 == 0) {
+                level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), ModSounds.HOOK_PULL.get(), SoundSource.PLAYERS, 0.4f, 1.2f);
+            }
         }
 
         // C. 掉落物牵引
         else if (tType == TargetType.ITEM && hookedEntity instanceof ItemEntity item) {
-            Vec3 toPlayer = shooter.position().add(0, 0.5, 0).subtract(item.position());
+            if (!item.isAlive() || item.isRemoved()) {
+                setRetracting();
+                return;
+            }
+            Vec3 toPlayer = shooter.position().add(0, 0.6, 0).subtract(item.position());
             double dist = toPlayer.length();
 
-            if (dist < 1.5) {
+            if (dist < 1.8) {
                 // 接近玩家自动拾取
+                item.setPickUpDelay(0);
                 item.playerTouch(shooter);
                 if (itemProtection) {
                     item.setInvulnerable(false);
                 }
+                item.setNoGravity(false);
                 setRetracting();
             } else {
-                Vec3 motion = toPlayer.normalize().scale(0.8);
+                item.setNoGravity(true);
+                Vec3 motion = toPlayer.normalize().scale(1.1).add(0, 0.18, 0);
                 item.setDeltaMovement(motion);
+                item.hasImpulse = true;
+                item.hurtMarked = true;
                 if (itemProtection) {
                     item.clearFire();
-                    // 防止沉入岩浆与虚空
                     if (item.getY() < level().getMinBuildHeight() + 1) {
                         item.setDeltaMovement(motion.x, 0.5, motion.z);
                     }

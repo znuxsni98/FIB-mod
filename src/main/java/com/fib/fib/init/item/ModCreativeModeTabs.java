@@ -38,6 +38,7 @@ public class ModCreativeModeTabs {
                         pOutput.accept(ModItems.DUAL_HOOK_MODULE.get());
                         pOutput.accept(ModItems.ITEM_PROTECTION_MODULE.get());
                         pOutput.accept(ModItems.MINING_MODULE.get());
+                        pOutput.accept(ModItems.GRAPPLE_MODULE.get());
 
                         pOutput.accept(PotionUtils.setPotion(new ItemStack(Items.POTION), ModPotions.FREEZING.get()));
                         pOutput.accept(PotionUtils.setPotion(new ItemStack(Items.POTION), ModPotions.LONG_FREEZING.get()));

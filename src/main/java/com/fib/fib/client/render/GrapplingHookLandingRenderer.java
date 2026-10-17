@@ -57,7 +57,7 @@ public class GrapplingHookLandingRenderer {
         // 能量检查
         boolean pressurized = GrapplingHookGunItem.hasPressurizedModule(gunStack);
         boolean dualHook = GrapplingHookGunItem.hasDualHookModule(gunStack);
-        float energyCost = 1.0f * (pressurized ? 2.0f : 1.0f) * (dualHook ? 1.5f : 1.0f);
+        float energyCost = 0.10f * (pressurized ? 2.0f : 1.0f) * (dualHook ? 1.5f : 1.0f);
         if (GrapplingHookGunItem.getEnergy(gunStack) < energyCost && !player.getAbilities().instabuild) {
             return;
         }
