@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "fib_mod:item/grappling_hook_gun"
+  }
+}

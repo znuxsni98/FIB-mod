@@ -80,6 +80,7 @@ public class FIBMod {
      * 在物品和方块都注册完毕后触发，客户端与服务端都会执行。适合做跨模组通用网络包、数据准备等。
      */
     private void commonSetup(final FMLCommonSetupEvent event) {
+        event.enqueueWork(com.fib.fib.network.ModMessages::register);
         LOGGER.info("[FIBMod] 通用生命周期初始化完成 (Common Setup Finished).");
     }
 

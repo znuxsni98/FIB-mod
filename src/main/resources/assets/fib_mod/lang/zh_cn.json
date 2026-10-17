@@ -111,5 +111,77 @@
   "item.minecraft.lingering_potion.effect.freezing": "滞留型冰冻药水",
   "item.minecraft.lingering_potion.effect.long_freezing": "滞留型冰冻药水",
   "item.minecraft.tipped_arrow.effect.freezing": "冰冻之箭",
-  "item.minecraft.tipped_arrow.effect.long_freezing": "冰冻之箭"
+  "item.minecraft.tipped_arrow.effect.long_freezing": "冰冻之箭",
+
+  "item.fib_mod.grappling_hook_gun": "钩爪枪",
+  "item.fib_mod.basic_hook": "基础钩爪",
+  "item.fib_mod.prismarine_hook": "海晶钩爪",
+  "item.fib_mod.wool_hook": "羊毛钩爪",
+  "item.fib_mod.netherite_hook": "下界合金钩爪",
+  "item.fib_mod.pressurized_module": "加压模块",
+  "item.fib_mod.smart_upgrade_module": "智能升级模块",
+  "item.fib_mod.dual_hook_module": "双钩模块",
+  "item.fib_mod.item_protection_module": "掉落物保护模块",
+  "item.fib_mod.mining_module": "挖掘模块",
+
+  "entity.fib_mod.grappling_hook": "钩爪",
+
+  "fib_mod.hook_upgrade.type.hook": "部件类型：[钩爪材质]",
+  "fib_mod.hook_upgrade.type.module": "部件类型：[性能模块]",
+  "fib_mod.hook_upgrade.type.function": "部件类型：[功能模块]",
+  "fib_mod.hook_upgrade.type.improvement": "部件类型：[改进模块]",
+  "fib_mod.hook_upgrade.type.hook_module": "部件类型：[钩爪模块]",
+
+  "fib_mod.hook_upgrade.basic_hook.desc": "基础材质，在水中阻力大，无法锚定高硬度方块。",
+  "fib_mod.hook_upgrade.prismarine_hook.desc": "海晶材质，水中无阻力并加速20%，水下造成额外伤害。",
+  "fib_mod.hook_upgrade.wool_hook.desc": "羊毛包裹，伤害为0且无法钩方块，仅用于安全拉取生物与掉落物。",
+  "fib_mod.hook_upgrade.netherite_hook.desc": "下界合金锻造，伤害大幅提升，可锚定黑曜石等极高硬度方块。",
+  "fib_mod.hook_upgrade.pressurized_module.desc": "发射初速 +50%，射程 +8，但发射与牵引能量消耗翻倍。",
+  "fib_mod.hook_upgrade.smart_module.desc": "解锁 [R] 键模式切换（普通 / 攀岩 / 拾取），并额外提供 1 个性能模块槽。",
+  "fib_mod.hook_upgrade.dual_hook_module.desc": "允许发射第 2 枚钩爪建立拴绳连接（最远 20 格）。激活期间无法钩掉落物，挖掘模块停用。",
+  "fib_mod.hook_upgrade.item_protection_module.desc": "保护牵引中的掉落物免遭岩浆、火焰、仙人掌及虚空销毁。",
+  "fib_mod.hook_upgrade.mining_module.desc": "解锁 [G] 键挖掘模式（三态切换）。远程破坏方块并将产物存入内置 16 格仓，对生物持续磨血。",
+
+  "fib_mod.hook_mode.pull": "牵引模式",
+  "fib_mod.hook_mode.climb": "攀岩模式",
+  "fib_mod.hook_mode.pickup": "拾取模式",
+  "fib_mod.mining_mode.off": "关闭",
+  "fib_mod.mining_mode.all": "开启（破坏可挖+可掉落）",
+  "fib_mod.mining_mode.breakable": "开启（仅破坏可挖）",
+
+  "fib_mod.hook.need_smart_module": "需要安装「智能升级模块」才能切换工作模式！",
+  "fib_mod.hook.mode_switched": "钩爪模式切换为：%s",
+  "fib_mod.hook.need_mining_module": "需要安装「挖掘模块」才能开启挖掘模式！",
+  "fib_mod.hook.dual_hook_blocks_mining": "双钩模块激活中，挖掘模块已被禁用！",
+  "fib_mod.hook.mining_mode_switched": "挖掘模式切换为：%s",
+  "fib_mod.hook.no_energy": "能量不足！请使用机械动力背罐补充压缩空气。",
+  "fib_mod.hook.charged": "从背罐转换了 %s 点能量！",
+
+  "fib_mod.hook.energy_tooltip": "能量储备：%s / %s",
+  "fib_mod.hook.mode_tooltip": "当前模式：%s",
+  "fib_mod.hook.mining_tooltip": "挖掘状态：%s",
+  "fib_mod.hook.upgrades_header": "已安装模块：",
+
+  "fib_mod.gui.grappling_hook.title": "钩爪枪改装与存储",
+  "fib_mod.gui.grappling_hook.upgrades": "改装槽位",
+  "fib_mod.gui.grappling_hook.storage": "存储仓 (16格)",
+  "fib_mod.gui.slot_locked_smart_module": "该模块槽未解锁！请在功能槽安装「智能升级模块」。",
+
+  "fib_mod.hud.energy": "⚡ 能量: %s/20.0",
+  "fib_mod.hud.mode": "模式: %s",
+  "fib_mod.hud.mining": "挖掘: %s",
+  "fib_mod.hud.mining.none": "挖掘: 未装载",
+  "fib_mod.hud.storage": "存储仓: %s/%s",
+
+  "key.categories.fib_mod": "菌染亵渎 (FIB)",
+  "key.fib_mod.hook_mode_switch": "钩爪枪：模式切换",
+  "key.fib_mod.hook_mining_toggle": "钩爪枪：挖掘模式切换",
+  "key.fib_mod.hook_climb": "钩爪枪：攀岩控制 (按住配合鼠标)",
+
+  "sounds.fib_mod.hook_shoot": "钩爪枪：发射",
+  "sounds.fib_mod.hook_hit_block": "钩爪：命中方块",
+  "sounds.fib_mod.hook_hit_entity": "钩爪：命中实体",
+  "sounds.fib_mod.hook_pull": "钩爪：收卷牵引",
+  "sounds.fib_mod.hook_retract": "钩爪：回收",
+  "sounds.fib_mod.hook_drill": "钩爪钻头：运转"
 }

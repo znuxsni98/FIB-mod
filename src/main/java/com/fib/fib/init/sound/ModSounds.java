@@ -21,6 +21,13 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> BLOCK_STEP = registerSoundEvent("block_step");
     public static final RegistryObject<SoundEvent> BLOCK_FALL = registerSoundEvent("block_fall");
 
+    public static final RegistryObject<SoundEvent> HOOK_SHOOT = registerSoundEvent("hook_shoot");
+    public static final RegistryObject<SoundEvent> HOOK_HIT_BLOCK = registerSoundEvent("hook_hit_block");
+    public static final RegistryObject<SoundEvent> HOOK_HIT_ENTITY = registerSoundEvent("hook_hit_entity");
+    public static final RegistryObject<SoundEvent> HOOK_PULL = registerSoundEvent("hook_pull");
+    public static final RegistryObject<SoundEvent> HOOK_RETRACT = registerSoundEvent("hook_retract");
+    public static final RegistryObject<SoundEvent> HOOK_DRILL = registerSoundEvent("hook_drill");
+
     public static final ForgeSoundType BLOCK_SOUND = new ForgeSoundType(1.0f, 1.0f,
             BLOCK_BREAK, BLOCK_STEP, BLOCK_PLACE, BLOCK_HIT, BLOCK_FALL);
 

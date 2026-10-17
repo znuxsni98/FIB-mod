@@ -112,5 +112,77 @@
   "item.minecraft.lingering_potion.effect.freezing": "Lingering Potion of Freezing",
   "item.minecraft.lingering_potion.effect.long_freezing": "Lingering Potion of Freezing",
   "item.minecraft.tipped_arrow.effect.freezing": "Arrow of Freezing",
-  "item.minecraft.tipped_arrow.effect.long_freezing": "Arrow of Freezing"
+  "item.minecraft.tipped_arrow.effect.long_freezing": "Arrow of Freezing",
+
+  "item.fib_mod.grappling_hook_gun": "Grappling Hook Gun",
+  "item.fib_mod.basic_hook": "Basic Hook",
+  "item.fib_mod.prismarine_hook": "Prismarine Hook",
+  "item.fib_mod.wool_hook": "Wool Hook",
+  "item.fib_mod.netherite_hook": "Netherite Hook",
+  "item.fib_mod.pressurized_module": "Pressurized Module",
+  "item.fib_mod.smart_upgrade_module": "Smart Upgrade Module",
+  "item.fib_mod.dual_hook_module": "Dual Hook Module",
+  "item.fib_mod.item_protection_module": "Item Protection Module",
+  "item.fib_mod.mining_module": "Mining Module",
+
+  "entity.fib_mod.grappling_hook": "Grappling Hook",
+
+  "fib_mod.hook_upgrade.type.hook": "Part Type: [Hook Material]",
+  "fib_mod.hook_upgrade.type.module": "Part Type: [Performance Module]",
+  "fib_mod.hook_upgrade.type.function": "Part Type: [Function Module]",
+  "fib_mod.hook_upgrade.type.improvement": "Part Type: [Improvement Module]",
+  "fib_mod.hook_upgrade.type.hook_module": "Part Type: [Hook Module]",
+
+  "fib_mod.hook_upgrade.basic_hook.desc": "Standard material with water drag; cannot anchor to high-hardness blocks.",
+  "fib_mod.hook_upgrade.prismarine_hook.desc": "Prismarine material with no water drag and +20% speed; deals extra damage underwater.",
+  "fib_mod.hook_upgrade.wool_hook.desc": "Padded wool with 0 damage; cannot hook blocks, safely pulls entities and items.",
+  "fib_mod.hook_upgrade.netherite_hook.desc": "Forged from netherite; high damage, can hook obsidian and ancient debris.",
+  "fib_mod.hook_upgrade.pressurized_module.desc": "+50% velocity, +8 range, but doubles energy consumption.",
+  "fib_mod.hook_upgrade.smart_module.desc": "Unlocks [R] mode switching (Pull/Climb/Pickup) and grants +1 module slot.",
+  "fib_mod.hook_upgrade.dual_hook_module.desc": "Allows firing a 2nd hook to create a tether up to 20 blocks. Ignores item drops and disables mining.",
+  "fib_mod.hook_upgrade.item_protection_module.desc": "Protects hooked items from fire, lava, cactus and void.",
+  "fib_mod.hook_upgrade.mining_module.desc": "Unlocks [G] mining mode. Remotely drills blocks into 16-slot storage and damages living targets.",
+
+  "fib_mod.hook_mode.pull": "Pull Mode",
+  "fib_mod.hook_mode.climb": "Climb Mode",
+  "fib_mod.hook_mode.pickup": "Pickup Mode",
+  "fib_mod.mining_mode.off": "Off",
+  "fib_mod.mining_mode.all": "All (Breakable + Drops)",
+  "fib_mod.mining_mode.breakable": "Breakable Only",
+
+  "fib_mod.hook.need_smart_module": "Smart Upgrade Module required to switch modes!",
+  "fib_mod.hook.mode_switched": "Hook mode switched to: %s",
+  "fib_mod.hook.need_mining_module": "Mining Module required to toggle mining!",
+  "fib_mod.hook.dual_hook_blocks_mining": "Dual Hook active: Mining Module is disabled!",
+  "fib_mod.hook.mining_mode_switched": "Mining mode switched to: %s",
+  "fib_mod.hook.no_energy": "Insufficient energy! Refill using a Create Copper Backtank.",
+  "fib_mod.hook.charged": "Transferred %s energy from Backtank air!",
+
+  "fib_mod.hook.energy_tooltip": "Energy: %s / %s",
+  "fib_mod.hook.mode_tooltip": "Mode: %s",
+  "fib_mod.hook.mining_tooltip": "Mining: %s",
+  "fib_mod.hook.upgrades_header": "Installed Modules:",
+
+  "fib_mod.gui.grappling_hook.title": "Grappling Hook Gun Customization",
+  "fib_mod.gui.grappling_hook.upgrades": "Upgrade Slots",
+  "fib_mod.gui.grappling_hook.storage": "Mined Storage (16 slots)",
+  "fib_mod.gui.slot_locked_smart_module": "Slot locked! Install a Smart Upgrade Module in the Function Slot.",
+
+  "fib_mod.hud.energy": "⚡ Energy: %s/20.0",
+  "fib_mod.hud.mode": "Mode: %s",
+  "fib_mod.hud.mining": "Mining: %s",
+  "fib_mod.hud.mining.none": "Mining: None",
+  "fib_mod.hud.storage": "Storage: %s/%s",
+
+  "key.categories.fib_mod": "FIB Mod",
+  "key.fib_mod.hook_mode_switch": "Hook Gun: Mode Switch",
+  "key.fib_mod.hook_mining_toggle": "Hook Gun: Mining Toggle",
+  "key.fib_mod.hook_climb": "Hook Gun: Climb Modifier",
+
+  "sounds.fib_mod.hook_shoot": "Hook Gun: Shoot",
+  "sounds.fib_mod.hook_hit_block": "Hook: Hit Block",
+  "sounds.fib_mod.hook_hit_entity": "Hook: Hit Entity",
+  "sounds.fib_mod.hook_pull": "Hook: Pull",
+  "sounds.fib_mod.hook_retract": "Hook: Retract",
+  "sounds.fib_mod.hook_drill": "Hook Drill: Drilling"
 }

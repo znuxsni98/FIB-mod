@@ -59,6 +59,12 @@ public class ModMenuTypes {
                     Corpse2Menu::new
             );
 
+    public static final RegistryObject<MenuType<com.fib.fib.gui.container.menu.GrapplingHookMenu>>
+            GRAPPLING_HOOK_MENU =
+            registerMenuType(
+                    "grappling_hook_menu",
+                    com.fib.fib.gui.container.menu.GrapplingHookMenu::new
+            );
 
     //endregion
 

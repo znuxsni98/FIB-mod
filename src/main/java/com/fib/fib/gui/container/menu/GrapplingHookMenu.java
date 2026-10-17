@@ -1,0 +1,213 @@
+package com.fib.fib.gui.container.menu;
+
+import com.fib.fib.init.ModMenuTypes;
+import com.fib.fib.init.item.custom.GrapplingHookGunItem;
+import com.fib.fib.init.item.custom.hook.HookUpgradeType;
+import com.fib.fib.init.item.custom.hook.IHookMaterial;
+import com.fib.fib.init.item.custom.hook.SmartUpgradeModuleItem;
+import com.fib.fib.init.item.custom.hook.GrapplingHookUpgradeItem;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.ItemStackHandler;
+import net.minecraftforge.items.SlotItemHandler;
+import org.jetbrains.annotations.NotNull;
+
+/**
+ * 钩爪枪升级与仓储配置容器菜单。
+ * 管理 5 大类升级部件槽位（含智能升级模块解锁的第 2 模块槽）与 16 格掉落物暂存仓。
+ */
+public class GrapplingHookMenu extends AbstractContainerMenu {
+    private final ItemStack gunStack;
+    private final InteractionHand hand;
+    private final ItemStackHandler upgradesHandler;
+    private final ItemStackHandler storageHandler;
+
+    public GrapplingHookMenu(int containerId, Inventory playerInventory, FriendlyByteBuf extraData) {
+        this(containerId, playerInventory, extraData.readItem(), extraData.readBoolean() ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND);
+    }
+
+    public GrapplingHookMenu(int containerId, Inventory playerInventory, ItemStack gunStack, InteractionHand hand) {
+        super(ModMenuTypes.GRAPPLING_HOOK_MENU.get(), containerId);
+        this.gunStack = gunStack;
+        this.hand = hand;
+        this.upgradesHandler = GrapplingHookGunItem.getUpgradesHandler(gunStack);
+        this.storageHandler = GrapplingHookGunItem.getStorageHandler(gunStack);
+
+        // 1. 升级部件槽位 (Slots 0 ~ 5)
+        // 槽位 0: 钩爪材质槽
+        addSlot(new SlotItemHandler(upgradesHandler, 0, 16, 20) {
+            @Override
+            public boolean mayPlace(@NotNull ItemStack stack) {
+                return stack.getItem() instanceof IHookMaterial;
+            }
+
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
+
+        // 槽位 1: 性能模块槽 1
+        addSlot(new SlotItemHandler(upgradesHandler, 1, 38, 20) {
+            @Override
+            public boolean mayPlace(@NotNull ItemStack stack) {
+                return stack.getItem() instanceof GrapplingHookUpgradeItem up && up.getUpgradeType() == HookUpgradeType.MODULE;
+            }
+
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
+
+        // 槽位 2: 性能模块槽 2（需安装智能升级模块解锁）
+        addSlot(new SlotItemHandler(upgradesHandler, 2, 38, 42) {
+            @Override
+            public boolean mayPlace(@NotNull ItemStack stack) {
+                return isSlot2Unlocked() && stack.getItem() instanceof GrapplingHookUpgradeItem up && up.getUpgradeType() == HookUpgradeType.MODULE;
+            }
+
+            @Override
+            public boolean isActive() {
+                return isSlot2Unlocked();
+            }
+
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
+
+        // 槽位 3: 功能槽（智能升级模块）
+        addSlot(new SlotItemHandler(upgradesHandler, 3, 16, 42) {
+            @Override
+            public boolean mayPlace(@NotNull ItemStack stack) {
+                return stack.getItem() instanceof GrapplingHookUpgradeItem up && up.getUpgradeType() == HookUpgradeType.FUNCTION;
+            }
+
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
+
+        // 槽位 4: 改进槽（双钩模块 / 掉落物保护模块）
+        addSlot(new SlotItemHandler(upgradesHandler, 4, 16, 64) {
+            @Override
+            public boolean mayPlace(@NotNull ItemStack stack) {
+                return stack.getItem() instanceof GrapplingHookUpgradeItem up && up.getUpgradeType() == HookUpgradeType.IMPROVEMENT;
+            }
+
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
+
+        // 槽位 5: 钩爪模块槽（挖掘模块）
+        addSlot(new SlotItemHandler(upgradesHandler, 5, 38, 64) {
+            @Override
+            public boolean mayPlace(@NotNull ItemStack stack) {
+                return stack.getItem() instanceof GrapplingHookUpgradeItem up && up.getUpgradeType() == HookUpgradeType.HOOK_MODULE;
+            }
+
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
+
+        // 2. 钩爪存储仓槽位 (16 格, 4x4, Slots 6 ~ 21)
+        for (int row = 0; row < 4; row++) {
+            for (int col = 0; col < 4; col++) {
+                int slotIndex = row * 4 + col;
+                addSlot(new SlotItemHandler(storageHandler, slotIndex, 94 + col * 18, 18 + row * 18));
+            }
+        }
+
+        // 3. 玩家背包与快捷栏 (Slots 22 ~ 57)
+        int playerInvY = 104;
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, playerInvY + row * 18));
+            }
+        }
+        for (int col = 0; col < 9; col++) {
+            addSlot(new Slot(playerInventory, col, 8 + col * 18, 162));
+        }
+    }
+
+    public boolean isSlot2Unlocked() {
+        return upgradesHandler.getStackInSlot(3).getItem() instanceof SmartUpgradeModuleItem;
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        ItemStack held = player.getItemInHand(hand);
+        return !held.isEmpty() && held.getItem() instanceof GrapplingHookGunItem;
+    }
+
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        // 保存升级槽与存储数据进物品 NBT
+        if (!player.level().isClientSide) {
+            ItemStack held = player.getItemInHand(hand);
+            if (held.getItem() instanceof GrapplingHookGunItem) {
+                GrapplingHookGunItem.saveUpgradesHandler(held, upgradesHandler);
+                GrapplingHookGunItem.saveStorageHandler(held, storageHandler);
+            }
+        }
+    }
+
+    @Override
+    public ItemStack quickMoveStack(Player player, int index) {
+        ItemStack itemstack = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        if (slot != null && slot.hasItem()) {
+            ItemStack slotStack = slot.getItem();
+            itemstack = slotStack.copy();
+
+            // 升级槽 (0-5) 或存储仓 (6-21) -> 移动到玩家背包 (22-57)
+            if (index < 22) {
+                if (!this.moveItemStackTo(slotStack, 22, 58, true)) {
+                    return ItemStack.EMPTY;
+                }
+            }
+            // 玩家背包 -> 尝试移入升级槽或存储仓
+            else {
+                // 优先尝试放入升级槽
+                boolean placedInUpgrade = false;
+                if (slotStack.getItem() instanceof IHookMaterial) {
+                    placedInUpgrade = this.moveItemStackTo(slotStack, 0, 1, false);
+                } else if (slotStack.getItem() instanceof GrapplingHookUpgradeItem up) {
+                    switch (up.getUpgradeType()) {
+                        case MODULE -> placedInUpgrade = this.moveItemStackTo(slotStack, 1, isSlot2Unlocked() ? 3 : 2, false);
+                        case FUNCTION -> placedInUpgrade = this.moveItemStackTo(slotStack, 3, 4, false);
+                        case IMPROVEMENT -> placedInUpgrade = this.moveItemStackTo(slotStack, 4, 5, false);
+                        case HOOK_MODULE -> placedInUpgrade = this.moveItemStackTo(slotStack, 5, 6, false);
+                    }
+                }
+
+                // 若非升级模块或升级槽已满，放入 16 格存储仓
+                if (!placedInUpgrade) {
+                    if (!this.moveItemStackTo(slotStack, 6, 22, false)) {
+                        return ItemStack.EMPTY;
+                    }
+                }
+            }
+
+            if (slotStack.isEmpty()) {
+                slot.setByPlayer(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+        }
+        return itemstack;
+    }
+}

@@ -40,6 +40,15 @@ public class ModEntities {
                             .build("dimensional_crack")
             );
 
+    public static final RegistryObject<EntityType<GrapplingHookEntity>> GRAPPLING_HOOK =
+            ENTITIES.register("grappling_hook", () ->
+                    EntityType.Builder.<GrapplingHookEntity>of(GrapplingHookEntity::new, MobCategory.MISC)
+                            .sized(0.35F, 0.35F)
+                            .clientTrackingRange(64)
+                            .updateInterval(1)
+                            .build("grappling_hook")
+            );
+
 
     public static void register(IEventBus bus) {
         ENTITIES.register(bus);

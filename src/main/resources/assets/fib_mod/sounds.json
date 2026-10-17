@@ -27,6 +27,42 @@
       "subtitle": "sounds.fib_mod.block_fall",
       "sounds": [
         "fib_mod:block_fall"
-    ]
-  }
+      ]
+    },
+    "hook_shoot": {
+      "subtitle": "sounds.fib_mod.hook_shoot",
+      "sounds": [
+        { "name": "item.crossbow.shoot", "type": "event" }
+      ]
+    },
+    "hook_hit_block": {
+      "subtitle": "sounds.fib_mod.hook_hit_block",
+      "sounds": [
+        { "name": "entity.arrow.hit", "type": "event" }
+      ]
+    },
+    "hook_hit_entity": {
+      "subtitle": "sounds.fib_mod.hook_hit_entity",
+      "sounds": [
+        { "name": "entity.player.attack.crit", "type": "event" }
+      ]
+    },
+    "hook_pull": {
+      "subtitle": "sounds.fib_mod.hook_pull",
+      "sounds": [
+        { "name": "entity.fishing_bobber.retrieve", "type": "event" }
+      ]
+    },
+    "hook_retract": {
+      "subtitle": "sounds.fib_mod.hook_retract",
+      "sounds": [
+        { "name": "item.armor.equip_chain", "type": "event" }
+      ]
+    },
+    "hook_drill": {
+      "subtitle": "sounds.fib_mod.hook_drill",
+      "sounds": [
+        { "name": "block.grindstone.use", "type": "event" }
+      ]
+    }
 }

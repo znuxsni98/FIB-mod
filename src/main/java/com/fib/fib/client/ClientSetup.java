@@ -73,6 +73,30 @@ public class ClientSetup {
                 ModEntities.DIMENSIONAL_CRACK.get(),
                 DimensionalCrackRenderer::new
         );
+
+        // 钩爪实体渲染器
+        event.registerEntityRenderer(
+                ModEntities.GRAPPLING_HOOK.get(),
+                com.fib.fib.client.render.entity.GrapplingHookRenderer::new
+        );
+    }
+
+    /**
+     * 注册 HUD 叠加层。
+     */
+    @SubscribeEvent
+    public static void onRegisterOverlays(net.minecraftforge.client.event.RegisterGuiOverlaysEvent event) {
+        event.registerAbove(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.CROSSHAIR.id(),
+                "grappling_hook_hud", com.fib.fib.client.render.GrapplingHookOverlay.HUD);
+    }
+
+    /**
+     * 注册物品栏能量双条渲染器。
+     */
+    @SubscribeEvent
+    public static void onRegisterItemDecorations(net.minecraftforge.client.event.RegisterItemDecorationsEvent event) {
+        event.register(com.fib.fib.init.item.ModItems.GRAPPLING_HOOK_GUN.get(),
+                new com.fib.fib.client.render.GrapplingHookEnergyBarDecorator());
     }
 
     /**
@@ -112,6 +136,12 @@ public class ClientSetup {
         MenuScreens.register(
                 ModMenuTypes.CORPSE2_MENU.get(),
                 Corpse2Screen::new
+        );
+
+        // 钩爪枪改装界面
+        MenuScreens.register(
+                ModMenuTypes.GRAPPLING_HOOK_MENU.get(),
+                com.fib.fib.gui.container.screen.GrapplingHookScreen::new
         );
     }
 }

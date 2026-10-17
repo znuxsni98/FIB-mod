@@ -28,6 +28,16 @@ public class ModCreativeModeTabs {
                         pOutput.accept(ModItems.WILD_DOG_MILK.get());
                         pOutput.accept(ModItems.SOLAR_PANEL_CONTROLLER.get());
                         pOutput.accept(ModItems.ICE_BALL.get());
+                        pOutput.accept(ModItems.GRAPPLING_HOOK_GUN.get());
+                        pOutput.accept(ModItems.BASIC_HOOK.get());
+                        pOutput.accept(ModItems.PRISMARINE_HOOK.get());
+                        pOutput.accept(ModItems.WOOL_HOOK.get());
+                        pOutput.accept(ModItems.NETHERITE_HOOK.get());
+                        pOutput.accept(ModItems.PRESSURIZED_MODULE.get());
+                        pOutput.accept(ModItems.SMART_UPGRADE_MODULE.get());
+                        pOutput.accept(ModItems.DUAL_HOOK_MODULE.get());
+                        pOutput.accept(ModItems.ITEM_PROTECTION_MODULE.get());
+                        pOutput.accept(ModItems.MINING_MODULE.get());
 
                         pOutput.accept(PotionUtils.setPotion(new ItemStack(Items.POTION), ModPotions.FREEZING.get()));
                         pOutput.accept(PotionUtils.setPotion(new ItemStack(Items.POTION), ModPotions.LONG_FREEZING.get()));
