@@ -86,9 +86,6 @@ public class GrapplingHookLandingRenderer {
         double maxDist = pressurized ? 24.0 : 16.0;
 
         // 弹道模拟
-        List<Vec3> points = new ArrayList<>();
-        points.add(startPos);
-
         Vec3 currentPos = startPos;
         Vec3 currentVel = velocity;
         Vec3 hitPoint = null;
@@ -102,11 +99,6 @@ public class GrapplingHookLandingRenderer {
 
             // 射程截断
             if (startPos.distanceTo(nextPos) > maxDist) {
-                double distToNext = startPos.distanceTo(nextPos);
-                double factor = (maxDist - startPos.distanceTo(currentPos)) / (distToNext - startPos.distanceTo(currentPos));
-                if (factor > 0 && factor <= 1.0) {
-                    points.add(currentPos.add(nextPos.subtract(currentPos).scale(factor)));
-                }
                 break;
             }
 
@@ -130,18 +122,15 @@ public class GrapplingHookLandingRenderer {
                     currentPos.distanceTo(entityHit.getLocation()) < currentPos.distanceTo(blockHit.getLocation()))) {
                 hitPoint = entityHit.getLocation();
                 hitFace = Direction.UP;
-                points.add(hitPoint);
                 canAnchor = true;
                 break;
             } else if (blockHit.getType() != HitResult.Type.MISS) {
                 hitPoint = blockHit.getLocation();
                 hitFace = blockHit.getDirection();
                 hitBlockPos = blockHit.getBlockPos();
-                points.add(hitPoint);
                 break;
             }
 
-            points.add(nextPos);
             currentPos = nextPos;
         }
 
@@ -156,7 +145,12 @@ public class GrapplingHookLandingRenderer {
             }
         }
 
-        // 开始在世界空间绘制
+        // 若未命中任何目标，不渲染任何多余线条
+        if (hitPoint == null || hitFace == null) {
+            return;
+        }
+
+        // 仅在目标命中表面绘制全息落点准星
         PoseStack poseStack = event.getPoseStack();
         Vec3 camPos = event.getCamera().getPosition();
 
@@ -166,103 +160,56 @@ public class GrapplingHookLandingRenderer {
         Matrix4f pose = poseStack.last().pose();
         VertexConsumer consumer = mc.renderBuffers().bufferSource().getBuffer(RenderType.lines());
 
-        // 颜色确定：有效锚定为青色，无效为警示红，未命中为柔和天蓝
-        int r, g, b, a;
-        if (hitPoint != null) {
-            if (canAnchor) {
-                r = 0; g = 235; b = 255; a = 200;
-            } else {
-                r = 255; g = 60; b = 60; a = 220;
-            }
+        int r, g, b;
+        if (canAnchor) {
+            r = 0; g = 235; b = 255;
         } else {
-            r = 140; g = 190; b = 255; a = 120;
+            r = 255; g = 60; b = 60;
         }
 
-        // 1. 绘制弹道曲线段
-        for (int i = 0; i < points.size() - 1; i++) {
-            Vec3 p1 = points.get(i);
-            Vec3 p2 = points.get(i + 1);
-
-            consumer.vertex(pose, (float) p1.x, (float) p1.y, (float) p1.z)
-                    .color(r, g, b, a)
-                    .normal(0, 1, 0)
-                    .endVertex();
-            consumer.vertex(pose, (float) p2.x, (float) p2.y, (float) p2.z)
-                    .color(r, g, b, a)
-                    .normal(0, 1, 0)
-                    .endVertex();
-        }
-
-        // 2. 绘制表面全息落点环与准星
-        if (hitPoint != null && hitFace != null) {
-            renderLandingMarker(consumer, pose, hitPoint, hitFace, canAnchor, r, g, b);
-        }
+        renderLandingMarker(consumer, pose, hitPoint, hitFace, canAnchor, r, g, b);
 
         poseStack.popPose();
     }
 
-    /** 绘制附着在方块表面上的全息圆环与十字刻度 */
+    /** 绘制附着在目标表面上的全息准星 */
     private static void renderLandingMarker(VertexConsumer consumer, Matrix4f pose, Vec3 hitPoint,
                                             Direction face, boolean canAnchor, int r, int g, int b) {
-        // 微小偏置防止与方块表面 Z-Fighting
         Vec3 normalVec = Vec3.atLowerCornerOf(face.getNormal());
         Vec3 center = hitPoint.add(normalVec.scale(0.015));
 
-        // 微弱呼吸脉冲动画
-        double time = System.currentTimeMillis() / 250.0;
-        float pulse = (float) Math.sin(time) * 0.02f;
-        float radius = 0.25f + pulse;
+        float innerR = 0.04f;
+        float outerR = 0.15f;
 
-        // 绘制 16 边形圆环
-        int segments = 16;
+        Vec3 uIn = getTangentOffset(face, innerR, 0);
+        Vec3 uOut = getTangentOffset(face, outerR, 0);
+        Vec3 vIn = getTangentOffset(face, 0, innerR);
+        Vec3 vOut = getTangentOffset(face, 0, outerR);
+
+        // 四向十字准星准星线
+        // +U
+        consumer.vertex(pose, (float)(center.x + uIn.x), (float)(center.y + uIn.y), (float)(center.z + uIn.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
+        consumer.vertex(pose, (float)(center.x + uOut.x), (float)(center.y + uOut.y), (float)(center.z + uOut.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
+        // -U
+        consumer.vertex(pose, (float)(center.x - uIn.x), (float)(center.y - uIn.y), (float)(center.z - uIn.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
+        consumer.vertex(pose, (float)(center.x - uOut.x), (float)(center.y - uOut.y), (float)(center.z - uOut.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
+        // +V
+        consumer.vertex(pose, (float)(center.x + vIn.x), (float)(center.y + vIn.y), (float)(center.z + vIn.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
+        consumer.vertex(pose, (float)(center.x + vOut.x), (float)(center.y + vOut.y), (float)(center.z + vOut.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
+        // -V
+        consumer.vertex(pose, (float)(center.x - vIn.x), (float)(center.y - vIn.y), (float)(center.z - vIn.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
+        consumer.vertex(pose, (float)(center.x - vOut.x), (float)(center.y - vOut.y), (float)(center.z - vOut.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
+
+        // 准星外环 (轻量 12 边形圆环)
+        float ringR = 0.11f;
+        int segments = 12;
         for (int i = 0; i < segments; i++) {
             double a1 = (i * 2.0 * Math.PI) / segments;
             double a2 = ((i + 1) * 2.0 * Math.PI) / segments;
-
-            Vec3 off1 = getTangentOffset(face, Math.cos(a1) * radius, Math.sin(a1) * radius);
-            Vec3 off2 = getTangentOffset(face, Math.cos(a2) * radius, Math.sin(a2) * radius);
-
-            Vec3 v1 = center.add(off1);
-            Vec3 v2 = center.add(off2);
-
-            consumer.vertex(pose, (float) v1.x, (float) v1.y, (float) v1.z)
-                    .color(r, g, b, 240)
-                    .normal(0, 1, 0)
-                    .endVertex();
-            consumer.vertex(pose, (float) v2.x, (float) v2.y, (float) v2.z)
-                    .color(r, g, b, 240)
-                    .normal(0, 1, 0)
-                    .endVertex();
-        }
-
-        // 绘制内部十字瞄准刻度
-        float innerR = 0.14f;
-        Vec3 u = getTangentOffset(face, innerR, 0);
-        Vec3 v = getTangentOffset(face, 0, innerR);
-
-        // U 轴十字线
-        consumer.vertex(pose, (float)(center.x - u.x), (float)(center.y - u.y), (float)(center.z - u.z))
-                .color(r, g, b, 220).normal(0, 1, 0).endVertex();
-        consumer.vertex(pose, (float)(center.x + u.x), (float)(center.y + u.y), (float)(center.z + u.z))
-                .color(r, g, b, 220).normal(0, 1, 0).endVertex();
-
-        // V 轴十字线
-        consumer.vertex(pose, (float)(center.x - v.x), (float)(center.y - v.y), (float)(center.z - v.z))
-                .color(r, g, b, 220).normal(0, 1, 0).endVertex();
-        consumer.vertex(pose, (float)(center.x + v.x), (float)(center.y + v.y), (float)(center.z + v.z))
-                .color(r, g, b, 220).normal(0, 1, 0).endVertex();
-
-        // 表面微型锚爪投影线
-        if (canAnchor) {
-            float flukeR = 0.08f;
-            for (int k = 0; k < 4; k++) {
-                double ang = k * (Math.PI / 2.0) + (Math.PI / 4.0);
-                Vec3 fTip = center.add(getTangentOffset(face, Math.cos(ang) * flukeR, Math.sin(ang) * flukeR));
-                consumer.vertex(pose, (float) center.x, (float) center.y, (float) center.z)
-                        .color(r, g, b, 255).normal(0, 1, 0).endVertex();
-                consumer.vertex(pose, (float) fTip.x, (float) fTip.y, (float) fTip.z)
-                        .color(r, g, b, 255).normal(0, 1, 0).endVertex();
-            }
+            Vec3 off1 = getTangentOffset(face, Math.cos(a1) * ringR, Math.sin(a1) * ringR);
+            Vec3 off2 = getTangentOffset(face, Math.cos(a2) * ringR, Math.sin(a2) * ringR);
+            consumer.vertex(pose, (float)(center.x + off1.x), (float)(center.y + off1.y), (float)(center.z + off1.z)).color(r, g, b, 200).normal(0, 1, 0).endVertex();
+            consumer.vertex(pose, (float)(center.x + off2.x), (float)(center.y + off2.y), (float)(center.z + off2.z)).color(r, g, b, 200).normal(0, 1, 0).endVertex();
         }
     }
 
