@@ -6,25 +6,46 @@
 
 > **请复制以下指令直接提交给 Gemini 4（或其他高级模型）进行审查：**
 >
-> “你现在是一名精通 **Minecraft Forge 1.20.1 (Forge 47.4.20 / Java 17)** 底层架构、Mojang 渲染管线、GLSL 着色器、SpongePowered Mixin 与大型模组包性能优化的资深模组架构师。
-> 下面是一份名为 `FIB-Mod` 的 Forge 1.20.1 模组工程材料包。该模组主要服务于中大型整合包 *Fungal Infection Blasphemy*，且由初学者配合 AI 辅助共同研发。
-> 我们刚刚对该模组进行了全量架构重构，现提交给你进行**极度严苛的代码审查（Code Review）**。
-> 请从以下五个维度进行全方位排查，指出所有潜在隐患、并发/同步漏洞、内存泄漏、渲染异常、Mixin 冲突点以及教学文档的准确性，并给出切实可行的修改建议：
+> “你现在同时具备双重身份：
+> 1. **资深 Minecraft Forge 模组架构师**：精通 Forge 1.20.1 (Forge 47.4.20 / Java 17) 底层原理、Mojang 渲染管线、GLSL Core Shader、SpongePowered Mixin 及大型整合包性能优化；
+> 2. **资深技术导师 (Tech Lead / Mentor)**：擅长技术带人、降低认知负载、将复杂技术抽象为新手友好的模块，并指导初级开发者正确利用 AI 编程。
+>
+> 下面是一份名为 `FIB-Mod` 的 Forge 1.20.1 模组工程材料包。该模组主要服务于中大型整合包 *Fungal Infection Blasphemy*。
+> 请阅读材料包中包含的【项目全景】、【对接人（合作开发者）背景画像】、【架构拓扑】及【核心源码】，并对我们刚完成的工程重构进行**极度严苛的代码审查（Code Review）与教学指导评估**。
+>
+> 请围绕以下六个维度展开深度审查并给出详尽报告：
 > 1. **物理端与逻辑端隔离（Physical Sidedness & Networking）**：是否存在服务端加载客户端类导致的闪退风险？Menu 与 BlockEntity 数据同步是否健壮？
-> 2. **渲染与着色器安全（Core Shaders & RenderSystem）**：自定义 Core Shader（`.vsh`/`.fsh`）在不同显卡/OptiFine/Embeddium 环境下的兼容性、Uniform 传递时序、深度写入与混合模式是否正确？
+> 2. **渲染与着色器安全（Core Shaders & RenderSystem）**：自定义 Core Shader（`.vsh`/`.fsh`）在不同显卡/光影/优化模组环境下的兼容性、Uniform 传递时序、深度写入与混合模式是否正确？
 > 3. **方块实体与性能瓶颈（Tick Efficiency & Capability）**：`IceMakerBlockEntity`、`SolarPanelBlockEntity`、`RTGBlockEntity` 的 Tick 计算量、NBT 保存反序列化成对性、Forge Capabilities 缓存失效（LazyOptional.invalidate）是否合规？
 > 4. **Mixin 注入安全性与整合包冲突（Mixin Collision）**：`LivingEntityMixin` 和 `EntityMixin` 对 `isInPowderSnow` 与 `hurt` 的注入点是否稳健？与 Cold Sweat、Spore 等修改温度/冻结的模组是否存在冲突风险？
-> 5. **教学体系与架构规范（Pedagogy & Architecture）**：面向新人和 AI 辅助编程的 `docs/` 教学文档是否通俗准确？重构后的工程结构是否符合现代 Forge 最佳实践？”
+> 5. **教学体系与架构规范（Pedagogy & Architecture）**：面向新人和 AI 辅助编程的 `docs/` 教学文档是否通俗准确？重构后的工程结构是否符合现代 Forge 最佳实践？
+> 6. ⭐ **【特邀专项】面向对接新人的教学与带人建议（Mentoring & Collaboration Guide）**：
+>    - 结合材料包中详述的‘对接人背景与痛点’，评估当前代码架构是否足够友好？
+>    - 给出具体的‘带人建议’：作为团队主导者，我该如何设计接口与规则，才能让一个只有基础视频知识、严重依赖 AI 的初学者，在接下来的内容制作中既能高效出活、少踩坑，又能真正学到规整的模组开发知识，降低团队沟通心智负担？”
 
 ---
 
-## 1. 项目全景概览 (Executive Summary)
+## 1. 合作开发者（对接人）背景画像与合作痛点
 
-* **模组标识 (Mod ID)**: `fib_mod`
-* **适用平台**: Minecraft Forge 1.20.1 (Forge 版本: `47.4.20`, Mappings: `official 1.20.1`, Java: `17`)
-* **核心目标**:
-  1. **服务整合包**: 为硬核末日感染向整合包 *Fungal Infection Blasphemy* 提供专属机器、货币商人交易、自制 Boss（哈吉作者）、环境投射物（冰球）以及维度裂缝传送机制。
-  2. **新人教学模版**: 合作开发者为刚入门的模组新人（参考 B站 UP主 北山_Besson 的教程起步，并大量运用 AI 生成高阶代码）。本工程重构必须在保证功能面向结果的同时，兼顾通俗易懂的教学规范，消除交流断层。
+为了让审查结论更具针对性和指导意义，特将本项目协作者的实际研发情况剖析如下：
+
+### 1.1 技能基线与知识来源
+* **编程基础**：缺乏系统的 Java 面向对象设计基础、计算机图形学与 Gradle 构建体系知识。
+* **主要学习路径**：完整跟随着 B站 UP主 **【北山_Besson】的《1.20.1 Forge 长线模组开发教程》**（开源仓库 `BeiShanair/TutorialMod-1.20.1-Forge`）视频进行模组入门。掌握了基本的单方块注册、物品注册、食物、简单创造栏与数据生成器概念。
+
+### 1.2 开发模式：“面向结果编程” + “深度依赖 AI 补全”
+* **现状**：整合包玩法设计需要大量超出基础教程范围的高级机制（如：带有 FE 能量/流体管道交互的制冰机、GeckoLib 骨骼动画 Boss、逐像素撕裂计算的 Core Shader、原版细雪与冻结判定的 Mixin 注入、复杂村民货币交易池）。
+* 遇到视频没讲的内容时，协作者选择向 AI（ChatGPT / Claude 等）提问并直接复制生成出的代码。
+
+### 1.3 曾发生的核心事故与沟通障碍（痛点复盘）
+1. **版本漂移与概念混淆**：
+   * AI 经常混入 1.20.6 / 26.4 快照的 API（如 `DataComponents`、JEI 19+ 移除的方法）。协作者看到编译报错时无法分辨 Warning（警告）与 Error（报错），误认为“报错也是 1.20.6 弃用，不用管它”。
+2. **“只给枪、不给子弹”的漏文件隐患**：
+   * AI 在生成包含多个联动类的功能时（如 `ModEntities` 注册 + `IceBallItem` 物品 + `IceBall` 投射物实体），协作者往往只粘贴了一部分，漏掉了关键的实体实现类或着色器源文件（如只推了 `dimensional_crack.json`，遗漏了 `.vsh` 和 `.fsh`），导致本地或队友拉取代码后大面积报红（`无法解析符号`）。
+3. **复制粘贴导致的样板代码失控**：
+   * 之前为 8 个定制村民职业编写交易时，将一段长达 50 行的字符串数组循环解析逻辑，不加封装地硬复制了 8 遍，导致类库体积膨胀且难于维护。
+4. **协作交流中的断层与心力交瘁**：
+   * 协作者在遇到编译故障时，往往只截图局部报错的一行红字随口推测，缺乏工程排错思维（上下文、调用栈、版本对比），使得项目推进中的技术对接成本极高。
 
 ---
 
@@ -244,9 +265,9 @@ public abstract class LivingEntityMixin {
    - `immediate.endBatch(RenderType)` 的强制打断批处理是否会引发严重的 DrawCall 性能衰退？
 3. **Mixin 侵入性**：
    - `LivingEntityMixin` 中拦截了 `isInPowderSnow` 的读取。如果有其他模组（如 Cold Sweat、Environment、Spore）同样修改了细雪逻辑，该 Mixin 是否具备容错性？
-4. **代码教学文档体系 (`docs/01` ~ `05`)**：
-   - 对初学者建立物理端/逻辑端概念的叙述是否存在误导？
-   - 给初学者的 AI 提问提示词模板（`docs/05`）是否足够严谨，能够有效防止 AI 幻觉和版本漂移？
+4. **面向新人的教学架构与带人策略 (`docs/01` ~ `05`)**：
+   - 当前的封装（如 `TradeHelper`、统一的 `ClientSetup`）是否真正降低了该开发者的心智门槛？
+   - 针对他“面向结果 + 依赖 AI”的特质，如何进一步优化协作流程，避免未来继续发生漏文件和沟通疲劳？
 
 ---
 *(材料包整理完毕，请直接复制本档案提交审查)*
