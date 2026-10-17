@@ -23,9 +23,8 @@ import org.jetbrains.annotations.Nullable;
 
 public class Crate extends Block implements EntityBlock {
 
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
-
-    public static final VoxelShape SHAPE =Block.box(0, 0, 0, 16, 16, 16);
+    // 注：板条箱模型为完全各向同性的正方体，不需要方向属性，避免无谓的 BlockState 复杂度
+    public static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 16, 16);
 
     public Crate(Properties pProperties) {
         super(pProperties);

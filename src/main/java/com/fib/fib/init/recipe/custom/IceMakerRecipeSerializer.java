@@ -113,7 +113,9 @@ public class IceMakerRecipeSerializer implements RecipeSerializer<IceMakerRecipe
 
         // energy_per_tick 就是每 tick 的 FE，不做任何换算 ——
         // 整段总耗电 = energy_per_tick * processing_time，那是给 JEI 看的结果，不是要填的数。
-        int energyPerTick = Math.max(0, GsonHelper.getAsInt(json, "energy_per_tick", 0));
+        // 省略时默认读取 Config.ICE_MAKER_BASE_ENERGY_USAGE，允许整合包作者统一在配置文件调节
+        int defaultEnergy = com.fib.fib.Config.ICE_MAKER_BASE_ENERGY_USAGE.get();
+        int energyPerTick = Math.max(0, GsonHelper.getAsInt(json, "energy_per_tick", defaultEnergy));
 
         // 旧的 energy_cost 键已废弃，这里【报错】而不是忽略。两种语义差一个 processing_time
         // 的倍数：老写法的 6400 若被当成每 tick，就是 6400 FE/t，远超机器 1000 FE/t 的输入上限，

@@ -1,30 +1,26 @@
 package com.fib.fib.mixin;
 
+import com.fib.fib.init.effect.FreezingMobEffect;
 import com.fib.fib.init.effect.ModEffects;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import net.minecraft.tags.DamageTypeTags;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 /**
- * 对齐 26.4-snapshot-3 对原版 LivingEntity 的冻结改动（方案 A）。
+ * 冻结机制增强 Mixin。
  *
- * 快照把「身处细雪才不衰减冻结值」改成「身处细雪 或 拥有 freezing 效果」都不衰减，
- * 并让满冻结伤害在拥有 freezing 效果时变为 1.5 倍。这里用 Mixin 复刻。
- *
- * 冻结值的累积由 FreezingMobEffect 每 tick 负责（对应快照的 freezeForTicks(1)），
- * 本 Mixin 只负责阻止衰减。
+ * 1. 拥有 freezing 药水效果时，视同身处细雪，阻止冻结值衰减；
+ * 2. 满冻结受击时，伤害乘以 FreezingMobEffect.DAMAGE_VALUE (1.5倍)；
+ * 3. 采用 MixinExtras 的 @ModifyArg 替代高侵入性 @Redirect，杜绝与 Cold Sweat / Spore / LSO 等模组的独占冲突！
  */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
 
     /**
-     * 目标：LivingEntity.aiStep 内读取 Entity.isInPowderSnow 的那处判断
-     * （字节码中 Fieldref owner 为 LivingEntity，故此处以 LivingEntity 指定）。
+     * 目标：LivingEntity.aiStep 内读取 Entity.isInPowderSnow 的那处判断。
      * 作用：拥有 freezing 效果时，视同身处细雪，从而不进入冻结值衰减分支。
      */
     @ModifyExpressionValue(
@@ -38,20 +34,22 @@ public abstract class LivingEntityMixin {
     }
 
     /**
-     * 目标：LivingEntity.aiStep 内满冻结时造成的 freeze 伤害调用。
-     * 作用：拥有 freezing 效果时，冻结伤害 ×1.5（与原版 1.0 相对）。
+     * 目标：LivingEntity.aiStep 内满冻结时造成的 freeze 伤害调用中的第二个参数 (amount)。
+     * 作用：拥有 freezing 效果时，冻结伤害 × FreezingMobEffect.DAMAGE_VALUE。
+     * 使用 @ModifyArg 仅修改参数，不独占 hurt() 方法调用，与所有整合包模组 100% 兼容。
      */
-    @Redirect(
+    @ModifyArg(
             method = "aiStep",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/world/entity/LivingEntity;hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
-                    ordinal = 0)
+                    ordinal = 0),
+            index = 1
     )
-    private boolean fib$boostFreezeDamage(LivingEntity self, DamageSource source, float amount) {
-        if (source.is(DamageTypeTags.IS_FREEZING)
-                && self.hasEffect(ModEffects.FREEZING.get())) {
-            amount *= 1.5F;
+    private float fib$boostFreezeDamage(float amount) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (self.hasEffect(ModEffects.FREEZING.get())) {
+            return amount * FreezingMobEffect.DAMAGE_VALUE;
         }
-        return self.hurt(source, amount);
+        return amount;
     }
 }

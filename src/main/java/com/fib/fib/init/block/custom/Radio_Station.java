@@ -21,10 +21,8 @@ public class Radio_Station extends Block {
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
-    public static final VoxelShape SHAPE_S =Block.box(0, 0, 0, 32, 13, 16);
-    public static final VoxelShape SHAPE_W =Block.box(0, 0, 0, 16, 13, 32);
-    public static final VoxelShape SHAPE_E =Block.box(0, 0, -16, 16, 13, 16);
-    public static final VoxelShape SHAPE_N =Block.box(-16, 0, 0, 16, 13, 16);
+    // 单方块无线电台工作台，碰撞箱限制在标准网格内，防止阻碍村民寻路
+    public static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 14, 16);
     public Radio_Station(Properties pProperties) {
         super(pProperties);
         this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH));
@@ -32,12 +30,7 @@ public class Radio_Station extends Block {
 
     @Override
     public VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
-        return switch (pState.getValue(FACING)) {
-            case SOUTH -> SHAPE_S;
-            case WEST -> SHAPE_W;
-            case EAST -> SHAPE_E;
-            default -> SHAPE_N;
-        };
+        return SHAPE;
     }
 
     @Override

@@ -21,10 +21,11 @@ public class Engineer_Workbench extends Block {
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
-    public static final VoxelShape SHAPE_S =Shapes.join(Block.box(-16, 0, 0, 16, 18, 16), Block.box(-16, 16, 0, 16, 30, 2), BooleanOp.OR);
-    public static final VoxelShape SHAPE_W =Shapes.join(Block.box(0, 0, -16, 16, 18, 16), Block.box(14, 16, -16, 16, 30, 16), BooleanOp.OR);
-    public static final VoxelShape SHAPE_E =Shapes.join(Block.box(0, 0, 0, 16, 18, 32), Block.box(0, 16, 0, 2, 30, 32), BooleanOp.OR);
-    public static final VoxelShape SHAPE_N =Shapes.join(Block.box(0, 0, 0, 32, 18, 16), Block.box(0, 16, 14, 32, 30, 16), BooleanOp.OR);
+    // 单方块工作台碰撞箱限制在 [0, 16] 网格内，防止隐形超界碰撞体卡死村民认领工作台的寻路
+    public static final VoxelShape SHAPE_S = Shapes.join(Block.box(0, 0, 0, 16, 16, 16), Block.box(0, 16, 0, 16, 24, 2), BooleanOp.OR);
+    public static final VoxelShape SHAPE_W = Shapes.join(Block.box(0, 0, 0, 16, 16, 16), Block.box(14, 16, 0, 16, 24, 16), BooleanOp.OR);
+    public static final VoxelShape SHAPE_E = Shapes.join(Block.box(0, 0, 0, 16, 16, 16), Block.box(0, 16, 0, 2, 24, 16), BooleanOp.OR);
+    public static final VoxelShape SHAPE_N = Shapes.join(Block.box(0, 0, 0, 16, 16, 16), Block.box(0, 16, 14, 16, 24, 16), BooleanOp.OR);
     public Engineer_Workbench(Properties pProperties) {
         super(pProperties);
         this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH));

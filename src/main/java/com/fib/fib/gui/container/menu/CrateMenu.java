@@ -14,6 +14,6 @@ public class CrateMenu extends ChestMenu {
         this(containerId, playerInventory, new SimpleContainer(27));
     }
     public CrateMenu(int containerId, Inventory playerInventory, Container container) {
-        super(MenuType.GENERIC_9x3, containerId, playerInventory, container, 3);
+        super(com.fib.fib.init.ModMenuTypes.CRATE_MENU.get(), containerId, playerInventory, container, 3);
     }
 }

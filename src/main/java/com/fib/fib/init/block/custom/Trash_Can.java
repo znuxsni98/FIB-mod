@@ -23,9 +23,8 @@ import org.jetbrains.annotations.Nullable;
 
 public class Trash_Can extends Block implements EntityBlock {
 
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
-
-    public static final VoxelShape SHAPE =Block.box(2, 0, 2, 14, 16, 14);
+    // 注：垃圾桶模型为旋转对称柱体，不需要方向属性，避免无谓的 BlockState 复杂度
+    public static final VoxelShape SHAPE = Block.box(2, 0, 2, 14, 16, 14);
 
     public Trash_Can(Properties pProperties) {
         super(pProperties);

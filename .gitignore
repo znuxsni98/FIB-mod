@@ -23,3 +23,9 @@ run
 
 # Files from Forge MDK
 forge*changelog.txt
+
+# Internal mentoring docs and editor configs (sent separately)
+docs/
+.cursorrules
+CLAUDE.md
+

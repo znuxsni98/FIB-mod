@@ -4,6 +4,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
@@ -13,6 +16,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 
 public class DimensionalCrackEntity extends Entity {
+
+    private static final EntityDataAccessor<Integer> DATA_AGE =
+            SynchedEntityData.defineId(DimensionalCrackEntity.class, EntityDataSerializers.INT);
 
     /** 碰撞箱厚度（格）—— 沿朝向方向。宽/高由 EntityType 的 sized(2, 3) 给出 */
     private static final float THICKNESS = 0.5F;
@@ -68,14 +74,16 @@ public class DimensionalCrackEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-        age++;
-
-        // 开启动画：前 40 tick（2 秒）为开启过程，之后标记完全开启
         if (!level().isClientSide) {
+            age++;
             if (age >= 40 && !fullyOpened) {
                 fullyOpened = true;
             }
-            // 功能性实体不需要持久化任何状态到 NBT，但可以同步 age 给客户端
+            if (age <= 50 || age % 20 == 0) {
+                this.entityData.set(DATA_AGE, age);
+            }
+        } else {
+            age = this.entityData.get(DATA_AGE);
         }
     }
 
@@ -91,6 +99,7 @@ public class DimensionalCrackEntity extends Entity {
 
     @Override
     protected void defineSynchedData() {
+        this.entityData.define(DATA_AGE, 0);
     }
 
     @Override

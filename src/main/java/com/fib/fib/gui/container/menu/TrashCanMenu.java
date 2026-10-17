@@ -15,6 +15,6 @@ public class TrashCanMenu extends ChestMenu {
         this(containerId, playerInventory, new SimpleContainer(27));
     }
     public TrashCanMenu(int containerId, Inventory playerInventory, Container container) {
-        super(MenuType.GENERIC_9x3, containerId, playerInventory, container, 3);
+        super(com.fib.fib.init.ModMenuTypes.TRASH_CAN_MENU.get(), containerId, playerInventory, container, 3);
     }
 }

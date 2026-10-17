@@ -120,37 +120,45 @@ public class DimensionalCrackRenderer extends EntityRenderer<DimensionalCrackEnt
         // （overlay/lightmap 占的是 1/2 号槽），只能自己往纹理槽里塞。
         // VertexBuffer#_drawWithShader 每次立即绘制都会把 0..11 号槽读出来 setSampler，
         // 所以只要在 endBatch 之前写好，这一批就会用上。
-        RenderSystem.setShaderTexture(1, RIPPLE_TEXTURE);
-        RenderSystem.setShaderTexture(2, LIGHTNING_TEXTURE);
+        int prevTex1 = RenderSystem.getShaderTexture(1);
+        int prevTex2 = RenderSystem.getShaderTexture(2);
+        try {
+            RenderSystem.setShaderTexture(1, RIPPLE_TEXTURE);
+            RenderSystem.setShaderTexture(2, LIGHTNING_TEXTURE);
 
-        shader.safeGetUniform("CrackTime").set(time);
-        shader.safeGetUniform("CrackParU").set(parallaxU);
-        shader.safeGetUniform("CrackParV").set(parallaxV);
-        shader.safeGetUniform("CrackScaleU").set(HALF_W * UV_PER_BLOCK);
-        shader.safeGetUniform("CrackScaleV").set(HALF_H * UV_PER_BLOCK);
-        shader.safeGetUniform("CrackAlpha").set(openAlpha);
+            shader.safeGetUniform("CrackTime").set(time);
+            shader.safeGetUniform("CrackParU").set(parallaxU);
+            shader.safeGetUniform("CrackParV").set(parallaxV);
+            shader.safeGetUniform("CrackScaleU").set(HALF_W * UV_PER_BLOCK);
+            shader.safeGetUniform("CrackScaleV").set(HALF_H * UV_PER_BLOCK);
+            shader.safeGetUniform("CrackAlpha").set(openAlpha);
 
-        // uniform 是整个 ShaderInstance 共享的，而批处理要到 flush 时才真正画。
-        // 同时存在两条裂缝的话后者会把前者的 uniform 覆盖掉，所以每一遍都立刻结束这一批，
-        // 保证每条裂缝用自己的时间/视差。endBatch(RenderType) 只冲这一种，不动别的。
-        MultiBufferSource.BufferSource immediate =
-                bufferSource instanceof MultiBufferSource.BufferSource bs ? bs : null;
+            // uniform 是整个 ShaderInstance 共享的，而批处理要到 flush 时才真正画。
+            // 同时存在两条裂缝的话后者会把前者的 uniform 覆盖掉，所以每一遍都立刻结束这一批，
+            // 保证每条裂缝用自己的时间/视差。endBatch(RenderType) 只冲这一种，不动别的。
+            MultiBufferSource.BufferSource immediate =
+                    bufferSource instanceof MultiBufferSource.BufferSource bs ? bs : null;
 
-        // ---- 第一遍：轮廓内部的实心层，写深度 ----
-        // 这一遍必须每一帧都画：它是唯一会往深度缓冲里留下记录的遍，
-        // 少了它，裂缝后面的实体就会盖到裂缝上（"透过裂缝能看见别的实体"）。
-        // 开启动画期间 CrackAlpha 还小，片元里 alpha 也跟着小，提前 discard 掉，不会挡东西。
-        shader.safeGetUniform("CrackMode").set(0.0F);
-        emitQuad(bufferSource.getBuffer(ModShaders.crackCoreRenderType()), matrix, normal, hw, hh);
-        if (immediate != null) {
-            immediate.endBatch(ModShaders.crackCoreRenderType());
-        }
+            // ---- 第一遍：轮廓内部的实心层，写深度 ----
+            // 这一遍必须每一帧都画：它是唯一会往深度缓冲里留下记录的遍，
+            // 少了它，裂缝后面的实体就会盖到裂缝上（"透过裂缝能看见别的实体"）。
+            // 开启动画期间 CrackAlpha 还小，片元里 alpha 也跟着小，提前 discard 掉，不会挡东西。
+            shader.safeGetUniform("CrackMode").set(0.0F);
+            emitQuad(bufferSource.getBuffer(ModShaders.crackCoreRenderType()), matrix, normal, hw, hh);
+            if (immediate != null) {
+                immediate.endBatch(ModShaders.crackCoreRenderType());
+            }
 
-        // ---- 第二遍：边缘层，不写深度 ----
-        shader.safeGetUniform("CrackMode").set(1.0F);
-        emitQuad(bufferSource.getBuffer(ModShaders.crackGlowRenderType()), matrix, normal, hw, hh);
-        if (immediate != null) {
-            immediate.endBatch(ModShaders.crackGlowRenderType());
+            // ---- 第二遍：边缘层，不写深度 ----
+            shader.safeGetUniform("CrackMode").set(1.0F);
+            emitQuad(bufferSource.getBuffer(ModShaders.crackGlowRenderType()), matrix, normal, hw, hh);
+            if (immediate != null) {
+                immediate.endBatch(ModShaders.crackGlowRenderType());
+            }
+        } finally {
+            // 渲染完毕后立即恢复原版纹理槽 1 (Overlay) 与 2 (Lightmap)，杜绝同帧后续实体变黑/变花
+            RenderSystem.setShaderTexture(1, prevTex1);
+            RenderSystem.setShaderTexture(2, prevTex2);
         }
 
         poseStack.popPose();

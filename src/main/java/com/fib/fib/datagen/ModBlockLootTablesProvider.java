@@ -10,11 +10,6 @@ import java.util.Set;
 
 public class ModBlockLootTablesProvider extends BlockLootSubProvider {
 
-    private static final Set<Block> EXCLUDED_BLOCKS = Set.of(
-            //无需检查
-            ModBlocks.SOLAR_PANEL.get()
-    );
-
     public ModBlockLootTablesProvider() {
         super(Set.of(), FeatureFlags.REGISTRY.allFlags());
     }
@@ -40,9 +35,10 @@ public class ModBlockLootTablesProvider extends BlockLootSubProvider {
 
     @Override
     protected Iterable<Block> getKnownBlocks() {
+        // 核心修改：直接比对 RegistryObject 引用排除太阳能板，绝不在类加载期调用 .get() 导致过早触发注册表检查
         return ModBlocks.BLOCKS.getEntries().stream()
+                .filter(regObj -> regObj != ModBlocks.SOLAR_PANEL)
                 .map(RegistryObject::get)
-                .filter(block -> !EXCLUDED_BLOCKS.contains(block)) // <--- 核心修改：过滤掉不需要的方块
                 ::iterator;
     }
 }

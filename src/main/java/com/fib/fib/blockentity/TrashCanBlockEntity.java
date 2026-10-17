@@ -73,6 +73,14 @@ public class TrashCanBlockEntity extends RandomizableContainerBlockEntity implem
     }
 
     @Override
+    public void stopOpen(@NotNull Player player) {
+        super.stopOpen(player);
+        // 垃圾桶核心功能：当玩家关闭界面离开时，彻底清空桶内所有残留物品
+        this.clearContent();
+        setChanged();
+    }
+
+    @Override
     protected void saveAdditional(@NotNull CompoundTag nbt) {
         super.saveAdditional(nbt);
 

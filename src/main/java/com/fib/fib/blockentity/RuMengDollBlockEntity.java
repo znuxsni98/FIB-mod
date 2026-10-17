@@ -78,4 +78,14 @@ public class RuMengDollBlockEntity extends BlockEntity {
         this.name = tag.getString("name");
         this.description = tag.getString("description");
     }
+
+    @Override
+    public CompoundTag getUpdateTag() {
+        return saveWithoutMetadata();
+    }
+
+    @Override
+    public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
+    }
 }

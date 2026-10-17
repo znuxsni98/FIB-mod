@@ -77,8 +77,10 @@ public class SolarPanelBlockEntity extends BlockEntity implements IHaveGoggleInf
     }
 
     // ==================== Tick 主循环 ====================
-// ★ 修复3: 增加发送节流，避免每tick都发包
     private int syncCooldown = 0;
+    private int lastSyncedEnergy = -1;
+    private List<BlockPos> cachedLinkedPanels = null;
+    private int topologyScanCooldown = 0;
 
     public void tick() {
         if (level == null || level.isClientSide) return;
@@ -96,11 +98,13 @@ public class SolarPanelBlockEntity extends BlockEntity implements IHaveGoggleInf
             }
         }
 
-        // 每20tick(1秒)同步一次到客户端。放在发电分支外：满仓(addEnergy 返回 0)、夜里、雨天
-        // 也要让护目镜看到最新储能，否则会停在"最后一次成功发电"的旧值上。
+        // 每20tick(1秒)同步一次到客户端。只有储能变化时才发送网络包，避免静止时无谓发包
         if (++syncCooldown >= 20) {
             syncCooldown = 0;
-            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            if (energyStorage.getEnergyStored() != lastSyncedEnergy) {
+                lastSyncedEnergy = energyStorage.getEnergyStored();
+                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            }
         }
 
         // 2. 向后输出：移到所有发电早退分支之外 —— 夜里/雨天缓存电也要能送出去
@@ -160,8 +164,12 @@ public class SolarPanelBlockEntity extends BlockEntity implements IHaveGoggleInf
             return new GenerationSnapshot(facing, false, 0, 0, 1);
         }
 
-        // 阵列扫描两端都做（纯方块状态读取），失败时退化为"只有自己"
-        List<BlockPos> linked = findLinkedPanels();
+        // 阵列拓扑扫描加节流缓存（每 20 tick 刷新一次），杜绝每 tick / 每渲染帧全量重跑跨方块扫描
+        if (cachedLinkedPanels == null || ++topologyScanCooldown >= 20) {
+            cachedLinkedPanels = findLinkedPanels();
+            topologyScanCooldown = 0;
+        }
+        List<BlockPos> linked = cachedLinkedPanels;
         int panelCount = 1 + linked.size();
 
         // 时间性环境（夜间/日出前/日落后）+ 维度 + 天气 不发电

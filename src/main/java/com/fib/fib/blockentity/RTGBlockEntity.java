@@ -47,6 +47,8 @@ public class RTGBlockEntity extends BlockEntity implements IHaveGoggleInformatio
     private float cachedTemperature = DEFAULT_TEMP;
     private int temperatureUpdateTimer = 0; // 新增：温度更新计时器
     private int syncCooldown = 0;           // 护目镜显示用的节流同步计数器
+    private int lastSyncedEnergy = -1;
+    private float lastSyncedTemp = -999.0f;
 
     public RTGBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.RTG_BE.get(), pos, state);
@@ -82,12 +84,12 @@ public class RTGBlockEntity extends BlockEntity implements IHaveGoggleInformatio
             temperatureUpdateTimer = 0;
         }
 
+        int prevEnergy = energyStorage.getEnergyStored();
+
         // 2. 每 tick 计算发电量
         int generation = calculateGeneration(cachedTemperature);
 
         if (generation > 0) {
-            // 注意：这里直接设置能量，如果超过上限会被 setEnergyStored 截断
-            // 如果需要更平滑的溢出处理，可以改为 receiveEnergy
             int newEnergy = Math.min(energyStorage.getEnergyStored() + generation, MAX_STORAGE);
             energyStorage.setEnergyStored(newEnergy);
         }
@@ -95,14 +97,21 @@ public class RTGBlockEntity extends BlockEntity implements IHaveGoggleInformatio
         // 3. 输出能量
         pushEnergy();
 
-        // 4. 每 20 tick 同步一次温度/储能给客户端 —— 客户端不跑 serverTick，
-        //    不同步的话护目镜上的温度和发电量会一直是旧值。
-        if (++syncCooldown >= 20) {
-            syncCooldown = 0;
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        // 性能关键：只有当电量确实发生变化时才调用 setChanged() 标脏区块，杜绝满电静止时无休止存盘
+        boolean energyChanged = (prevEnergy != energyStorage.getEnergyStored());
+        if (energyChanged) {
+            setChanged();
         }
 
-        setChanged();
+        // 4. 每 20 tick 检查一次是否需要同步给客户端（护目镜），只有在电量或温度有实质改变时才发包
+        if (++syncCooldown >= 20) {
+            syncCooldown = 0;
+            if (energyStorage.getEnergyStored() != lastSyncedEnergy || Math.abs(cachedTemperature - lastSyncedTemp) > 0.05f) {
+                lastSyncedEnergy = energyStorage.getEnergyStored();
+                lastSyncedTemp = cachedTemperature;
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            }
+        }
     }
 
     /**

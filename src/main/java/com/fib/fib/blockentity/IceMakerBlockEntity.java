@@ -153,6 +153,55 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider, IH
         }
     };
 
+    /**
+     * 对外自动化包装器（用于漏斗、机械动力溜槽、RS/AE2 管道等）：
+     * 1. 外部管道只允许向输入槽 0 (INPUT_SLOT) 和流体容器槽 1 (INPUT_SLOT_FLUID) 插入物品；
+     * 2. 外部管道只允许从产物槽 2 (OUTPUT_SLOT) 和空容器槽 3 (OUTPUT_SLOT_FLUID) 抽取物品；
+     * ★ 核心防护：严禁外部漏斗从槽 0 抽取未消耗的模具！
+     */
+    private final IItemHandler automationItemHandler = new IItemHandler() {
+        @Override
+        public int getSlots() {
+            return itemHandler.getSlots();
+        }
+
+        @Override
+        public @NotNull ItemStack getStackInSlot(int slot) {
+            return itemHandler.getStackInSlot(slot);
+        }
+
+        @Override
+        public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+            // 只允许向槽 0 和槽 1 插入物品（isItemValid 会进一步检查流体容器合法性）
+            if (slot != INPUT_SLOT && slot != INPUT_SLOT_FLUID) {
+                return stack;
+            }
+            return itemHandler.insertItem(slot, stack, simulate);
+        }
+
+        @Override
+        public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
+            // 只允许从产物槽（槽 2）和空容器槽（槽 3）提取物品，保护槽 0 的模具和原材料
+            if (slot != OUTPUT_SLOT && slot != OUTPUT_SLOT_FLUID) {
+                return ItemStack.EMPTY;
+            }
+            return itemHandler.extractItem(slot, amount, simulate);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return itemHandler.getSlotLimit(slot);
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return itemHandler.isItemValid(slot, stack);
+        }
+    };
+
+    private final LazyOptional<IItemHandler> itemCap = LazyOptional.of(() -> automationItemHandler);
+    private FluidStack lastSyncedFluid = FluidStack.EMPTY;
+
     // ==================== 流体 ====================
 
     /**
@@ -276,7 +325,10 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider, IH
         // 传不了流体 ID，而 GUI 上色和护目镜都要知道是哪种流体。
         if (++syncCooldown >= SYNC_INTERVAL) {
             syncCooldown = 0;
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+            if (!fluidTank.getFluid().isFluidStackIdentical(lastSyncedFluid)) {
+                lastSyncedFluid = fluidTank.getFluid().copy();
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+            }
         }
     }
 
@@ -602,6 +654,12 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider, IH
             return false;
         }
 
+        // 核心检查：如果当前流体不足或没有匹配的下游链式配方，绝不把成品搬回输入槽锁死！
+        if (!canStartChainRecipeWith(output)) {
+            idleTicks = 0;
+            return false;
+        }
+
         int delay = producer == null
                 ? IceMakerRecipe.DEFAULT_RECYCLE_DELAY
                 : producer.getRecycleDelay();
@@ -611,6 +669,23 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider, IH
 
         idleTicks = 0;
         return moveOutputToInput(output);
+    }
+
+    /**
+     * 检查当前输出槽产物是否能与当前储罐流体匹配上一条有效的下游合成配方。
+     * 防止在储罐流体耗尽时将成品冰块强行回流到输入槽导致被死死卡住。
+     */
+    private boolean canStartChainRecipeWith(ItemStack output) {
+        if (level == null || output.isEmpty()) {
+            return false;
+        }
+        FluidStack tank = fluidTank.getFluid();
+        for (IceMakerRecipe recipe : level.getRecipeManager().getAllRecipesFor(ModRecipes.ICE_MAKER_TYPE.get())) {
+            if (recipe.matchesInputs(tank, output, true)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** 把输出槽整摞搬进输入槽；输入槽塞不下的部分留在输出槽。 */
@@ -668,11 +743,16 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider, IH
 
     @Override
     public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) {
-            return energyCap.cast();
-        }
-        if (cap == ForgeCapabilities.FLUID_HANDLER) {
-            return fluidCap.cast();
+        if (!this.remove) {
+            if (cap == ForgeCapabilities.ITEM_HANDLER) {
+                return itemCap.cast();
+            }
+            if (cap == ForgeCapabilities.ENERGY) {
+                return energyCap.cast();
+            }
+            if (cap == ForgeCapabilities.FLUID_HANDLER) {
+                return fluidCap.cast();
+            }
         }
         return super.getCapability(cap, side);
     }
@@ -680,6 +760,7 @@ public class IceMakerBlockEntity extends BlockEntity implements MenuProvider, IH
     @Override
     public void invalidateCaps() {
         super.invalidateCaps();
+        itemCap.invalidate();
         energyCap.invalidate();
         fluidCap.invalidate();
     }

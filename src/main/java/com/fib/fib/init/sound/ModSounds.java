@@ -19,15 +19,13 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> BLOCK_BREAK = registerSoundEvent("block_break");
     public static final RegistryObject<SoundEvent> BLOCK_HIT = registerSoundEvent("block_hit");
     public static final RegistryObject<SoundEvent> BLOCK_STEP = registerSoundEvent("block_step");
-    public static final RegistryObject<SoundEvent> BLOCK_FALL = registerSoundEvent("empty");
+    public static final RegistryObject<SoundEvent> BLOCK_FALL = registerSoundEvent("block_fall");
 
-    public static final ForgeSoundType BLOCK_SOUND = new ForgeSoundType(1.0f,1.0f,
+    public static final ForgeSoundType BLOCK_SOUND = new ForgeSoundType(1.0f, 1.0f,
             BLOCK_BREAK, BLOCK_STEP, BLOCK_PLACE, BLOCK_HIT, BLOCK_FALL);
 
-
-
     public static RegistryObject<SoundEvent> registerSoundEvent(String name) {
-        ResourceLocation id =ResourceLocation.fromNamespaceAndPath(FIBMod.MOD_ID,name);
+        ResourceLocation id = new ResourceLocation(FIBMod.MOD_ID, name);
         return SOUND_EVENT.register(name, () -> SoundEvent.createVariableRangeEvent(id));
     }
 
