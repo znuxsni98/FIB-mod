@@ -156,6 +156,8 @@
   "fib_mod.hook.mining_mode_switched": "挖掘模式切换为：%s",
   "fib_mod.hook.no_energy": "能量不足！请使用机械动力背罐补充压缩空气。",
   "fib_mod.hook.charged": "从背罐转换了 %s 点能量！",
+  "fib_mod.hook.retracted_targeted": "已收回对准的钩爪",
+  "fib_mod.hook.retracted_all": "已收回所有钩爪",
 
   "fib_mod.hook.energy_tooltip": "能量储备：%s / %s",
   "fib_mod.hook.mode_tooltip": "当前模式：%s",

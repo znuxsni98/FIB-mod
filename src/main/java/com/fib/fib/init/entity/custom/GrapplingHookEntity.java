@@ -223,6 +223,11 @@ public class GrapplingHookEntity extends Projectile {
         return partnerHook;
     }
 
+    public void clearPartnerHook() {
+        this.partnerHook = null;
+        entityData.set(DATA_PARTNER_HOOK_ID, -1);
+    }
+
     @Nullable
     public Player getShooter() {
         Entity owner = getOwner();
@@ -257,7 +262,7 @@ public class GrapplingHookEntity extends Projectile {
             // 双钩拴绳连接距离限制（最大 20 格）
             if (dualHook) {
                 GrapplingHookEntity partner = getPartnerHook();
-                if (partner != null && !partner.isRemoved()) {
+                if (partner != null && !partner.isRemoved() && partner.getHookState() != State.RETRACTING && getHookState() != State.RETRACTING) {
                     if (position().distanceTo(partner.position()) > 20.0) {
                         setRetracting();
                         partner.setRetracting();

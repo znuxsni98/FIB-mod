@@ -55,6 +55,12 @@ public class ModMessages {
                 .encoder(SyncPlayerMotionPacket::toBytes)
                 .consumerMainThread(SyncPlayerMotionPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(com.fib.fib.network.packet.HookVaultPacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(com.fib.fib.network.packet.HookVaultPacket::new)
+                .encoder(com.fib.fib.network.packet.HookVaultPacket::toBytes)
+                .consumerMainThread(com.fib.fib.network.packet.HookVaultPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

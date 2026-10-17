@@ -78,6 +78,27 @@ public class KeyBindings {
             while (KEY_MINING_TOGGLE.consumeClick()) {
                 ModMessages.sendToServer(new HookMiningTogglePacket());
             }
+
+            // 空格键平台边缘借力高跳 (2-3格)
+            if (mc.options.keyJump.consumeClick() && mc.level != null) {
+                java.util.List<com.fib.fib.init.entity.custom.GrapplingHookEntity> hooks = mc.level.getEntitiesOfClass(
+                        com.fib.fib.init.entity.custom.GrapplingHookEntity.class,
+                        player.getBoundingBox().inflate(16.0),
+                        h -> h.getShooter() == player && (h.isHooked() && h.getHookState() != com.fib.fib.init.entity.custom.GrapplingHookEntity.State.MINING)
+                );
+
+                for (com.fib.fib.init.entity.custom.GrapplingHookEntity hook : hooks) {
+                    net.minecraft.world.phys.Vec3 anchor = hook.getAnchorPos();
+                    double dist = player.position().distanceTo(anchor);
+                    if (dist <= 4.5) {
+                        ModMessages.sendToServer(new com.fib.fib.network.packet.HookVaultPacket());
+                        net.minecraft.world.phys.Vec3 fwd = new net.minecraft.world.phys.Vec3(anchor.x - player.getX(), 0, anchor.z - player.getZ()).normalize().scale(0.38);
+                        player.setDeltaMovement(fwd.x, 0.65, fwd.z);
+                        player.resetFallDistance();
+                        break;
+                    }
+                }
+            }
         }
 
         @SubscribeEvent

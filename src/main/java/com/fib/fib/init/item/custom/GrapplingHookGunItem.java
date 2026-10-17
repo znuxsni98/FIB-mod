@@ -31,6 +31,7 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkHooks;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -284,9 +285,44 @@ public class GrapplingHookGunItem extends Item {
         if (player.isShiftKeyDown()) {
             if (!activeHooks.isEmpty()) {
                 // 如果钩爪处于活动中，潜行+右键触发回收
+                // 双钩/多钩模式：若准星对准某一枚钩爪，则仅回收对准的那一根
+                GrapplingHookEntity targetedHook = null;
+                if (activeHooks.size() >= 2) {
+                    Vec3 eyePos = player.getEyePosition();
+                    Vec3 lookVec = player.getViewVector(1.0F).normalize();
+                    double maxDot = 0.75;
+                    for (GrapplingHookEntity hook : activeHooks) {
+                        Vec3 hookPos = hook.isHooked() ? hook.getAnchorPos() : hook.position();
+                        Vec3 toHook = hookPos.subtract(eyePos);
+                        if (toHook.lengthSqr() > 0.01) {
+                            double dot = lookVec.dot(toHook.normalize());
+                            if (dot > maxDot) {
+                                maxDot = dot;
+                                targetedHook = hook;
+                            }
+                        }
+                    }
+                }
+
+                if (targetedHook != null) {
+                    if (!level.isClientSide) {
+                        targetedHook.setRetracting();
+                        targetedHook.clearPartnerHook();
+                        for (GrapplingHookEntity hook : activeHooks) {
+                            if (hook != targetedHook) {
+                                hook.clearPartnerHook();
+                            }
+                        }
+                    }
+                    player.level().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.HOOK_RETRACT.get(), SoundSource.PLAYERS, 0.8f, 1.2f);
+                    player.displayClientMessage(Component.translatable("fib_mod.hook.retracted_targeted").withStyle(ChatFormatting.YELLOW), true);
+                    return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+                }
+
                 if (!level.isClientSide) {
                     for (GrapplingHookEntity hook : activeHooks) {
                         hook.setRetracting();
+                        hook.clearPartnerHook();
                     }
                 }
                 player.level().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.HOOK_RETRACT.get(), SoundSource.PLAYERS, 0.8f, 1.0f);
@@ -316,16 +352,50 @@ public class GrapplingHookGunItem extends Item {
             // 针对已存在的钩爪进行交互（拉取 / 回收）
             if (!level.isClientSide) {
                 Mode mode = getMode(stack);
-                for (GrapplingHookEntity hook : activeHooks) {
-                    if (mode == Mode.PICKUP) {
-                        hook.setRetracting();
-                    } else if (mode == Mode.PULL) {
-                        if (hook.isHooked()) {
-                            hook.startPulling();
+                if (mode == Mode.PICKUP) {
+                    GrapplingHookEntity targetedHook = null;
+                    if (activeHooks.size() >= 2) {
+                        Vec3 eyePos = player.getEyePosition();
+                        Vec3 lookVec = player.getViewVector(1.0F).normalize();
+                        double maxDot = 0.75;
+                        for (GrapplingHookEntity hook : activeHooks) {
+                            Vec3 hookPos = hook.isHooked() ? hook.getAnchorPos() : hook.position();
+                            Vec3 toHook = hookPos.subtract(eyePos);
+                            if (toHook.lengthSqr() > 0.01) {
+                                double dot = lookVec.dot(toHook.normalize());
+                                if (dot > maxDot) {
+                                    maxDot = dot;
+                                    targetedHook = hook;
+                                }
+                            }
                         }
-                    } else if (mode == Mode.CLIMB) {
-                        if (hook.isHooked()) {
-                            hook.toggleAutoAscend();
+                    }
+
+                    if (targetedHook != null) {
+                        targetedHook.setRetracting();
+                        targetedHook.clearPartnerHook();
+                        for (GrapplingHookEntity hook : activeHooks) {
+                            if (hook != targetedHook) {
+                                hook.clearPartnerHook();
+                            }
+                        }
+                        player.displayClientMessage(Component.translatable("fib_mod.hook.retracted_targeted").withStyle(ChatFormatting.YELLOW), true);
+                    } else {
+                        for (GrapplingHookEntity hook : activeHooks) {
+                            hook.setRetracting();
+                            hook.clearPartnerHook();
+                        }
+                    }
+                } else {
+                    for (GrapplingHookEntity hook : activeHooks) {
+                        if (mode == Mode.PULL) {
+                            if (hook.isHooked()) {
+                                hook.startPulling();
+                            }
+                        } else if (mode == Mode.CLIMB) {
+                            if (hook.isHooked()) {
+                                hook.toggleAutoAscend();
+                            }
                         }
                     }
                 }

@@ -157,6 +157,8 @@
   "fib_mod.hook.mining_mode_switched": "Mining mode switched to: %s",
   "fib_mod.hook.no_energy": "Insufficient energy! Refill using a Create Copper Backtank.",
   "fib_mod.hook.charged": "Transferred %s energy from Backtank air!",
+  "fib_mod.hook.retracted_targeted": "Retracted targeted hook",
+  "fib_mod.hook.retracted_all": "Retracted all hooks",
 
   "fib_mod.hook.energy_tooltip": "Energy: %s / %s",
   "fib_mod.hook.mode_tooltip": "Mode: %s",
