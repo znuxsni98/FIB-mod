@@ -19,17 +19,8 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 
 /**
- * --------------------------------------------------------------------------
- * ❄️ 冰球投射物实体 (IceBall)
- * --------------------------------------------------------------------------
- * 【初中生大白话讲解】：
- * 你在游戏里右键扔出一个雪球、鸡蛋或末影珍珠，它们本质上都是一个“投掷物实体（ThrowableItemProjectile）”。
- * 
- * 一个投掷物的生命周期如下：
- * 1. 玩家右键：物品类 (IceBallItem) 生成这个实体，赋予一个向前的初速度；
- * 2. 飞行中：在空中画抛物线，游戏自动为它渲染物品贴图；
- * 3. 撞到生物 (onHitEntity)：造成伤害（这里是速度越快，伤害越高！）；
- * 4. 撞击落地 (onHit)：播放玻璃破碎音效、爆出冰碎屑粒子，然后销毁自身 (discard)。
+ * 冰球投射物实体 (Throwable Ice Ball Projectile)。
+ * 继承自 ThrowableItemProjectile，支持碰撞动态速度伤害加成与击碎粒子音效。
  */
 public class IceBall extends ThrowableItemProjectile {
 

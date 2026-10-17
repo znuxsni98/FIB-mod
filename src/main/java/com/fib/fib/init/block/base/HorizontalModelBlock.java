@@ -16,16 +16,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * --------------------------------------------------------------------------
- * 🧱 【新人专用基类】自带东南西北四向水平旋转的装饰模型方块
- * --------------------------------------------------------------------------
- * 【初中生大白话讲解】：
- * 以前每次加一个桌子、椅子、箱子，都要从头写 60 行代码（定义 FACING、覆写 rotate、
- * mirror、getStateForPlacement、createBlockStateDefinition）。只要有一行抄漏了，
- * 方块放下去不是方向不对就是游戏直接崩溃！
- * 
- * 现在只要继承本类（或者直接 new HorizontalModelBlock），传一个碰撞箱即可：
- * 一行代码就能拥有完整的四向旋转与状态注册！
+ * 水平四向旋转装饰方块通用基类 (Horizontal Model Block)。
+ * 封装水平朝向 (FACING) 的放置判断、旋转镜像与 BlockState 注册逻辑，提供统一的碰撞箱支持。
  */
 public class HorizontalModelBlock extends HorizontalDirectionalBlock {
     private final VoxelShape shapeN, shapeS, shapeW, shapeE;

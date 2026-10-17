@@ -17,18 +17,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * --------------------------------------------------------------------------
- * 🛠️ 自动数据生成器总入口 (ModDataGenerator)
- * --------------------------------------------------------------------------
- * 【初中生大白话讲解】：
- * 你是不是觉得手写一个个方块的 JSON 模型文件（比如 assets/fib_mod/models/block/xxx.json）很麻烦？
- * Minecraft Forge 提供了一个偷懒神器，叫“数据生成器（Data Generator）”。
- * 
- * 你只要在代码里写一句规则（比如：“把所有模组方块的掉落物设置成掉落它自己”），
- * 然后在 IDEA 右侧 Gradle 任务里双击运行 `runData`，
- * 这个类就会自动帮你把几百个 JSON 模型、掉落物战利品表全部批量生成出来！
- * 
- * ⚠️【注意】：平时正常玩游戏时这个类是不运行的，只有运行 `runData` 任务时才会触发。
+ * Forge 数据生成器入口 (Data Gathering Entry)。
+ * 响应 GatherDataEvent，用于通过代码批量构建方块状态、模型与战利品表等数据包文件。
  */
 @Mod.EventBusSubscriber(modid = FIBMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ModDataGenerator {

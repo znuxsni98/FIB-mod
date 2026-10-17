@@ -155,10 +155,10 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ["-Xlint:-removal"]
 }
 
-// 新人提交代码前的一键防呆自检任务
+// 本地代码提交前的验证任务 (checkReadyToPush)
 tasks.register('checkReadyToPush') {
-    group = 'fib_verification'
-    description = '新人提交代码前的一键安全检查：自动验证编译通过 + 检查着色器配对完整性'
+    group = 'verification'
+    description = '验证 Java 编译及 Core Shader 资源配对完整性'
     dependsOn 'compileJava', 'processResources'
 
     doLast {
@@ -169,13 +169,12 @@ tasks.register('checkReadyToPush') {
                 def vsh = new File(shaderDir, "${baseName}.vsh")
                 def fsh = new File(shaderDir, "${baseName}.fsh")
                 if (!vsh.exists() || !fsh.exists()) {
-                    throw new GradleException("❌【着色器缺失报警】找到了 ${jsonFile.name}，但缺失配套的 ${baseName}.vsh 或 ${baseName}.fsh！")
+                    throw new GradleException("Shader 资源不完整：找到 ${jsonFile.name}，但缺失配套的 ${baseName}.vsh 或 ${baseName}.fsh！")
                 }
             }
         }
         println "=================================================================="
-        println "✅ 恭喜！Java 代码编译 100% 通过，着色器资源完整！"
-        println "👉 现在请打开 Git 窗口，勾选所有文件（注意红色未追踪文件）并提交推送！"
+        println "✅ 编译检查通过，着色器资源完整。"
         println "=================================================================="
     }
 }

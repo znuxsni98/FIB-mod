@@ -21,19 +21,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 /**
- * --------------------------------------------------------------------------
- * 🖥️ 客户端统一注册中心 (ClientSetup)
- * --------------------------------------------------------------------------
- * 【初中生大白话讲解】：
- * 想象你在玩联机游戏，你的电脑有屏幕有显卡（叫“客户端”），而开服的电脑可能根本连显示器都没有（叫“服务端”）。
- * 这个类里面所有的事情，都是只有【有显示器的客户端】才能干的！
- * 比如：
- * 1. 玩家打开箱子/制冰机时，屏幕上弹出的那个 GUI 贴图界面 (Screen)；
- * 2. 玩家眼里看到的 3D 实体模型与动作渲染 (Renderer)；
- * 
- * ⚠️【开发铁则】：
- * 这个类头顶加了 {@code value = Dist.CLIENT}，代表 Forge 会保护它，
- * 绝不会让无界面的服务端加载这个类。所有客户端视觉专属的内容，统一写在这里，严禁分散在其它地方！
+ * 客户端专属注册中心 (Client Setup)。
+ * 仅在物理客户端 (Dist.CLIENT) 加载，集中负责 MenuScreens、EntityRenderers 与 BlockEntityRenderers 的注册绑定。
  */
 @Mod.EventBusSubscriber(
         modid = FIBMod.MOD_ID,

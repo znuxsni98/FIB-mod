@@ -12,15 +12,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 /**
- * --------------------------------------------------------------------------
- * ❄️ 冰球物品 (IceBallItem)
- * --------------------------------------------------------------------------
- * 【初中生大白话讲解】：
- * 这是玩家拿在手里的冰球物品。
- * 当玩家右键点击时，触发 {@link #use} 方法：
- * 1. 播放扔雪球的声音；
- * 2. 如果不是创造模式，手里的冰球数量减 1；
- * 3. 在服务端生成一个 {@link IceBall} 投射物实体，朝玩家视线方向飞出。
+ * 冰球手持物品类 (Ice Ball Item)。
+ * 支持右键发射 IceBall 投射物实体。
  */
 public class IceBallItem extends Item {
 

@@ -6,18 +6,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 
 /**
- * --------------------------------------------------------------------------
- * ⚙️ 模组通用配置文件 (Config)
- * --------------------------------------------------------------------------
- * 【初中生大白话讲解】：
- * 很多玩家喜欢按自己的喜好调参数（比如：“这个机器耗电太快了，能不能改成 50 FE/tick？”）。
- * Forge 提供了这个机制，它会在 config/fib_mod-common.toml 生成一个文本文件，
- * 玩家用记事本修改里面的数字，不用重新编译模组就能生效！
- * 
- * 配置文件分三类：
- * 1. COMMON（通用）：服务端和客户端共用，比如机器能耗、掉落率。
- * 2. CLIENT（客户端）：只有自己电脑生效，比如特效开关、UI 界面位置。
- * 3. SERVER（单世界专属）：保存在每个世界的 serverconfig 文件夹里。
+ * 模组通用配置类 (Common Config)。
+ * 对应生成配置文件：config/fib_mod-common.toml，用于控制机器基础能耗与视觉特效开关。
  */
 @Mod.EventBusSubscriber(modid = FIBMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
