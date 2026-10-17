@@ -12,6 +12,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -21,7 +22,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -35,6 +35,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.*;
+import net.minecraftforge.entity.IEntityAdditionalSpawnData;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkHooks;
@@ -49,7 +50,7 @@ import java.util.UUID;
  * 驱动状态机（飞行、锚定、牵引、攀爬、远程挖掘、收回与双钩拴绳），
  * 负责方块/生物碰撞检测、物理移动矢量同步及音效粒子表现。
  */
-public class GrapplingHookEntity extends Projectile {
+public class GrapplingHookEntity extends Projectile implements IEntityAdditionalSpawnData {
 
     public enum State {
         FLYING,
@@ -87,6 +88,8 @@ public class GrapplingHookEntity extends Projectile {
             SynchedEntityData.defineId(GrapplingHookEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_ANCHOR_Z =
             SynchedEntityData.defineId(GrapplingHookEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Integer> DATA_OWNER_ID =
+            SynchedEntityData.defineId(GrapplingHookEntity.class, EntityDataSerializers.INT);
 
     private ItemStack gunStack = ItemStack.EMPTY;
     private int obstructedTicks = 0;
@@ -120,6 +123,7 @@ public class GrapplingHookEntity extends Projectile {
     public GrapplingHookEntity(Level level, Player shooter, ItemStack gunStack) {
         this(ModEntities.GRAPPLING_HOOK.get(), level);
         setOwner(shooter);
+        entityData.set(DATA_OWNER_ID, shooter.getId());
         this.gunStack = gunStack.copy();
         setPos(shooter.getX(), shooter.getEyeY() - 0.1, shooter.getZ());
 
@@ -149,6 +153,7 @@ public class GrapplingHookEntity extends Projectile {
         entityData.define(DATA_ANCHOR_X, 0.0f);
         entityData.define(DATA_ANCHOR_Y, 0.0f);
         entityData.define(DATA_ANCHOR_Z, 0.0f);
+        entityData.define(DATA_OWNER_ID, -1);
     }
 
     public State getHookState() {
@@ -237,7 +242,16 @@ public class GrapplingHookEntity extends Projectile {
     @Nullable
     public Player getShooter() {
         Entity owner = getOwner();
-        return owner instanceof Player player ? player : null;
+        if (owner instanceof Player player) return player;
+        int ownerId = entityData.get(DATA_OWNER_ID);
+        if (ownerId != -1) {
+            Entity ent = level().getEntity(ownerId);
+            if (ent instanceof Player player) {
+                setOwner(player);
+                return player;
+            }
+        }
+        return null;
     }
 
     // ==================== 主循环 Tick ====================
@@ -247,13 +261,11 @@ public class GrapplingHookEntity extends Projectile {
         super.tick();
 
         Player shooter = getShooter();
-        if (shooter == null || (!level().isClientSide && !shooter.isAlive())) {
-            discard();
-            return;
-        }
-
-        // 仅在服务端运行状态机核心逻辑
         if (!level().isClientSide) {
+            if (shooter == null || !shooter.isAlive()) {
+                discard();
+                return;
+            }
             checkItemSwitch(shooter);
 
             switch (getHookState()) {
@@ -276,19 +288,31 @@ public class GrapplingHookEntity extends Projectile {
                 }
             }
         } else {
-            // 客户端位置更新
-            if (getHookState() == State.HOOKED || getHookState() == State.MINING) {
-                Vec3 anchor = getAnchorPos();
-                setPos(anchor.x, anchor.y, anchor.z);
+            // 客户端位置更新：若处于锚定/牵引/攀爬/挖掘状态，持续吸附于目标点或目标实体
+            if (isHooked()) {
+                if (getTargetType() == TargetType.BLOCK) {
+                    Vec3 anchor = getAnchorPos();
+                    if (anchor.lengthSqr() > 0.001) {
+                        setPos(anchor.x, anchor.y, anchor.z);
+                    }
+                } else if (getTargetType() == TargetType.LIVING || getTargetType() == TargetType.ITEM) {
+                    int targetId = entityData.get(DATA_TARGET_ENTITY_ID);
+                    if (targetId != -1) {
+                        Entity ent = level().getEntity(targetId);
+                        if (ent != null) {
+                            setPos(ent.getX(), ent.getY() + ent.getBbHeight() / 2.0, ent.getZ());
+                        }
+                    }
+                }
             }
         }
     }
 
-    /** 检测玩家是否切换了非钩爪枪物品，若是则自动收回 */
+    /** 检测玩家是否切换了非钩爪枪物品，若是则自动收回（支持主副手检测） */
     private void checkItemSwitch(Player shooter) {
-        ItemStack held = shooter.getMainHandItem();
-        if (!(held.getItem() instanceof GrapplingHookGunItem)) {
-            // 切换到非钩爪物品时收回
+        ItemStack main = shooter.getMainHandItem();
+        ItemStack off = shooter.getOffhandItem();
+        if (!(main.getItem() instanceof GrapplingHookGunItem) && !(off.getItem() instanceof GrapplingHookGunItem)) {
             setRetracting();
         }
     }
@@ -741,6 +765,42 @@ public class GrapplingHookEntity extends Projectile {
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    @Override
+    public void writeSpawnData(FriendlyByteBuf buffer) {
+        Entity owner = getOwner();
+        buffer.writeInt(owner != null ? owner.getId() : entityData.get(DATA_OWNER_ID));
+        buffer.writeItem(gunStack);
+        buffer.writeInt(getHookState().ordinal());
+        Vec3 anchor = getAnchorPos();
+        buffer.writeFloat((float) anchor.x);
+        buffer.writeFloat((float) anchor.y);
+        buffer.writeFloat((float) anchor.z);
+        buffer.writeInt(getHookMaterialId());
+    }
+
+    @Override
+    public void readSpawnData(FriendlyByteBuf additionalData) {
+        int ownerId = additionalData.readInt();
+        if (ownerId != -1) {
+            entityData.set(DATA_OWNER_ID, ownerId);
+            Entity ent = level().getEntity(ownerId);
+            if (ent instanceof Player player) {
+                setOwner(player);
+            }
+        }
+        this.gunStack = additionalData.readItem();
+        int stateIdx = additionalData.readInt();
+        if (stateIdx >= 0 && stateIdx < State.values().length) {
+            setHookState(State.values()[stateIdx]);
+        }
+        float ax = additionalData.readFloat();
+        float ay = additionalData.readFloat();
+        float az = additionalData.readFloat();
+        setAnchorPos(new Vec3(ax, ay, az));
+        int matId = additionalData.readInt();
+        entityData.set(DATA_HOOK_MATERIAL_ID, matId);
     }
 
     @Override

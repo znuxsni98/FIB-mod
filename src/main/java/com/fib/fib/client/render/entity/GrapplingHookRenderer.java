@@ -221,7 +221,7 @@ public class GrapplingHookRenderer extends EntityRenderer<GrapplingHookEntity> {
         consumer.vertex(pose, x4, y4, z4).color(255, 255, 255, 255).uv(u4, v4).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(normal, nx, ny, nz).endVertex();
     }
 
-    /** 绘制真正的 3D 建模物理绳索（带实体方块截面、曲率悬链线、编织纹理与渐变光照） */
+    /** 绘制真正的 3D 建模物理绳索（带真实体积截面、悬链线曲率、编织纹理阴影与全动态光照插值） */
     private void render3DModeledRope(GrapplingHookEntity entity, float partialTicks, PoseStack poseStack, MultiBufferSource buffer) {
         Player shooter = entity.getShooter();
         if (shooter == null) return;
@@ -234,9 +234,8 @@ public class GrapplingHookRenderer extends EntityRenderer<GrapplingHookEntity> {
         double handX;
         double handY;
         double handZ;
-        float crouchOffset;
 
-        // 计算第一人称近平面枪口精确锚定或第三人称手部坐标
+        // 计算第一人称近平面枪口精确锚定或第三人称手部真实世界坐标
         if ((this.entityRenderDispatcher.options == null || this.entityRenderDispatcher.options.getCameraType().isFirstPerson()) && shooter == Minecraft.getInstance().player) {
             double fovFactor = 960.0D / (double)this.entityRenderDispatcher.options.fov().get().intValue();
             Vec3 nearPt = this.entityRenderDispatcher.camera.getNearPlane().getPointOnPlane((float)handSide * 0.48F, -0.22F);
@@ -246,27 +245,28 @@ public class GrapplingHookRenderer extends EntityRenderer<GrapplingHookEntity> {
             nearPt = nearPt.yRot(swingSin * 0.5F);
             nearPt = nearPt.xRot(-swingSin * 0.7F);
             handX = Mth.lerp(partialTicks, shooter.xo, shooter.getX()) + nearPt.x;
-            handY = Mth.lerp(partialTicks, shooter.yo, shooter.getY()) + nearPt.y;
+            handY = Mth.lerp(partialTicks, shooter.yo, shooter.getY()) + nearPt.y + (double)shooter.getEyeHeight();
             handZ = Mth.lerp(partialTicks, shooter.zo, shooter.getZ()) + nearPt.z;
-            crouchOffset = shooter.getEyeHeight();
         } else {
             float bodyYawRad = Mth.lerp(partialTicks, shooter.yBodyRotO, shooter.yBodyRot) * ((float)Math.PI / 180F);
             double sinYaw = Math.sin(bodyYawRad);
             double cosYaw = Math.cos(bodyYawRad);
-            double sideOffset = (double)handSide * 0.35D;
+            double sideOffset = (double)handSide * 0.38D;
             handX = Mth.lerp(partialTicks, shooter.xo, shooter.getX()) - cosYaw * sideOffset - sinYaw * 0.7D;
             handY = shooter.yo + (double)shooter.getEyeHeight() + (shooter.getY() - shooter.yo) * (double)partialTicks - 0.40D;
             handZ = Mth.lerp(partialTicks, shooter.zo, shooter.getZ()) - sinYaw * sideOffset + cosYaw * 0.7D;
-            crouchOffset = shooter.isCrouching() ? -0.1875F : 0.0F;
+            if (shooter.isCrouching()) {
+                handY -= 0.1875D;
+            }
         }
 
-        // 双钩并在时在枪口端做左右分离微弱偏移
+        // 双钩并在时在枪口端做左右微弱分离
         GrapplingHookEntity partner = entity.getPartnerHook();
         if (partner != null && !partner.isRemoved()) {
             float viewYaw = shooter.getViewYRot(partialTicks) * ((float)Math.PI / 180F);
             double rightX = Math.cos(viewYaw);
             double rightZ = Math.sin(viewYaw);
-            double sideSep = (entity.getId() < partner.getId()) ? -0.05 : 0.05;
+            double sideSep = (entity.getId() < partner.getId()) ? -0.06 : 0.06;
             handX += rightX * sideSep;
             handZ += rightZ * sideSep;
         }
@@ -276,39 +276,41 @@ public class GrapplingHookRenderer extends EntityRenderer<GrapplingHookEntity> {
         double hookY = Mth.lerp(partialTicks, entity.yo, entity.getY()) + 0.15D;
         double hookZ = Mth.lerp(partialTicks, entity.zo, entity.getZ());
 
-        // 相对向量（从钩爪指向手部）
-        float relX = (float)(handX - hookX);
-        float relY = (float)(handY - hookY) + crouchOffset;
-        float relZ = (float)(handZ - hookZ);
+        // 相对世界位移向量（从钩爪指向枪口）
+        float dx = (float)(handX - hookX);
+        float dy = (float)(handY - hookY);
+        float dz = (float)(handZ - hookZ);
 
         poseStack.pushPose();
         PoseStack.Pose poseEntry = poseStack.last();
         Matrix4f poseMat = poseEntry.pose();
         Matrix3f normMat = poseEntry.normal();
 
-        // 绳索材质色彩
-        int cr = 72, cg = 58, cb = 44;
+        // 绳索材质基础色彩
+        int cr = 75, cg = 60, cb = 45; // 工业编织精钢缆绳 / 基础绳索
         switch (entity.getHookMaterialId()) {
-            case 1 -> { cr = 40; cg = 140; cb = 140; } // 海晶
-            case 2 -> { cr = 225; cg = 220; cb = 210; } // 羊毛
-            case 3 -> { cr = 44; cg = 40; cb = 48; } // 下界合金
+            case 1 -> { cr = 45; cg = 180; cb = 170; } // 海晶水下充能缆
+            case 2 -> { cr = 230; cg = 225; cb = 215; } // 羊毛吸音静音绳
+            case 3 -> { cr = 55; cg = 50; cb = 55; }   // 下界合金耐高温合金索
         }
 
-        int steps = 20;
-        float sagFactor = (entity.getHookState() == GrapplingHookEntity.State.PULLING) ? 0.03f : 0.22f;
-        float horizontalDist = (float)Math.sqrt(relX * relX + relZ * relZ);
+        int steps = 24;
+        float sagFactor = (entity.getHookState() == GrapplingHookEntity.State.PULLING) ? 0.02f : 0.16f;
+        float horizontalDist = (float)Math.sqrt(dx * dx + dz * dz);
 
-        // 计算每段中心点及切线
-        Vec3[] centerPoints = new Vec3[steps + 1];
-        for (int k = 0; k <= steps; k++) {
-            float t = (float)k / (float)steps;
-            float px = relX * t;
-            float py = relY * t - Mth.sin(t * (float)Math.PI) * sagFactor * Math.min(6.0f, horizontalDist);
-            float pz = relZ * t;
-            centerPoints[k] = new Vec3(px, py, pz);
+        // 计算水平法向微元（用于挤出 3D 缆索横截面）
+        float ropeHalfR = 0.025f; // 5cm 直径真实工业缆绳
+        float nx, nz;
+        if (horizontalDist < 1e-4f) {
+            nx = ropeHalfR;
+            nz = 0.0f;
+        } else {
+            nx = (-dz / horizontalDist) * ropeHalfR;
+            nz = (dx / horizontalDist) * ropeHalfR;
         }
+        float ny = ropeHalfR;
 
-        // 光照插值准备
+        // 动态环境光照插值准备
         BlockPos hookBlockPos = BlockPos.containing(hookX, hookY, hookZ);
         BlockPos handBlockPos = BlockPos.containing(handX, handY, handZ);
         int hookBlockLight = entity.level().getBrightness(LightLayer.BLOCK, hookBlockPos);
@@ -316,88 +318,76 @@ public class GrapplingHookRenderer extends EntityRenderer<GrapplingHookEntity> {
         int hookSkyLight = entity.level().getBrightness(LightLayer.SKY, hookBlockPos);
         int handSkyLight = entity.level().getBrightness(LightLayer.SKY, handBlockPos);
 
-        // 1. 建模真正的 3D 棱柱实心管道绳索 (QUADS, entityCutoutNoCull, 保证所有着色器与光影下可见)
-        VertexConsumer quadConsumer = buffer.getBuffer(RenderType.entityCutoutNoCull(getTextureLocation(entity)));
-        float ropeR = 0.024f; // 4.8cm 直径真实工业绳索
+        // 1. 采用 RenderType.leash() 原版专用无剔除、全着色器兼容的 3D 立体交叉缆索通道
+        VertexConsumer leashConsumer = buffer.getBuffer(RenderType.leash());
 
-        // 计算每个节点的 4 个横截面顶点
-        Vec3[][] ringVertices = new Vec3[steps + 1][4];
+        // Pass A: 水平向四边形条带 (从 0 推进到 steps)
         for (int k = 0; k <= steps; k++) {
-            Vec3 p = centerPoints[k];
-            Vec3 dir;
-            if (k < steps) {
-                dir = centerPoints[k + 1].subtract(p);
-            } else {
-                dir = p.subtract(centerPoints[k - 1]);
-            }
-            double dLen = dir.length();
-            if (dLen < 1e-4) dir = new Vec3(0, 1, 0);
-            else dir = dir.scale(1.0 / dLen);
-
-            // 水平横截面法线
-            double hx = -dir.z;
-            double hz = dir.x;
-            double hLen = Math.sqrt(hx * hx + hz * hz);
-            if (hLen < 1e-4) {
-                hx = 1; hz = 0; hLen = 1;
-            }
-            Vec3 u = new Vec3(hx / hLen * ropeR, 0, hz / hLen * ropeR);
-            Vec3 v = dir.cross(u).normalize().scale(ropeR);
-
-            ringVertices[k][0] = p.add(u);
-            ringVertices[k][1] = p.add(v);
-            ringVertices[k][2] = p.subtract(u);
-            ringVertices[k][3] = p.subtract(v);
-        }
-
-        // 沿绳索长度封闭 4 个面生成 3D 管壁
-        for (int k = 0; k < steps; k++) {
             float t = (float)k / (float)steps;
+            float cx = dx * t;
+            float cy = 0.15f + dy * t - Mth.sin(t * (float)Math.PI) * sagFactor * Math.min(5.0f, horizontalDist);
+            float cz = dz * t;
+
             int bl = (int)Mth.lerp(t, (float)hookBlockLight, (float)handBlockLight);
             int sl = (int)Mth.lerp(t, (float)hookSkyLight, (float)handSkyLight);
             int light = LightTexture.pack(bl, sl);
 
-            float v0 = (k % 2 == 0) ? 0.0f : 0.5f;
-            float v1 = (k % 2 == 0) ? 0.5f : 1.0f;
+            // 绳索纤维节段明暗交织纹理 (0.75 与 1.0 交替)
+            float shade = (k % 2 == 0) ? 0.75f : 1.0f;
+            int r = (int)(cr * shade);
+            int g = (int)(cg * shade);
+            int b = (int)(cb * shade);
 
-            for (int f = 0; f < 4; f++) {
-                int nextF = (f + 1) % 4;
-                Vec3 pA = ringVertices[k][f];
-                Vec3 pB = ringVertices[k][nextF];
-                Vec3 pC = ringVertices[k + 1][nextF];
-                Vec3 pD = ringVertices[k + 1][f];
-
-                Vec3 edge1 = pB.subtract(pA);
-                Vec3 edge2 = pD.subtract(pA);
-                Vec3 norm = edge1.cross(edge2).normalize();
-
-                quadConsumer.vertex(poseMat, (float)pA.x, (float)pA.y, (float)pA.z).color(cr, cg, cb, 255).uv(0.25f, v0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(normMat, (float)norm.x, (float)norm.y, (float)norm.z).endVertex();
-                quadConsumer.vertex(poseMat, (float)pB.x, (float)pB.y, (float)pB.z).color(cr, cg, cb, 255).uv(0.50f, v0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(normMat, (float)norm.x, (float)norm.y, (float)norm.z).endVertex();
-                quadConsumer.vertex(poseMat, (float)pC.x, (float)pC.y, (float)pC.z).color(cr, cg, cb, 255).uv(0.50f, v1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(normMat, (float)norm.x, (float)norm.y, (float)norm.z).endVertex();
-                quadConsumer.vertex(poseMat, (float)pD.x, (float)pD.y, (float)pD.z).color(cr, cg, cb, 255).uv(0.25f, v1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(normMat, (float)norm.x, (float)norm.y, (float)norm.z).endVertex();
-            }
+            leashConsumer.vertex(poseMat, cx - nx, cy, cz - nz).color(r, g, b, 255).uv2(light).endVertex();
+            leashConsumer.vertex(poseMat, cx + nx, cy, cz + nz).color(r, g, b, 255).uv2(light).endVertex();
         }
 
-        // 2. 绘制原版 lineStrip 强化远距离与强光影下的可视线
+        // Pass B: 垂直向四边形条带 (从 steps 反向逆推回 0，无缝首尾相接避免 TriangleStrip 破面)
+        for (int k = steps; k >= 0; k--) {
+            float t = (float)k / (float)steps;
+            float cx = dx * t;
+            float cy = 0.15f + dy * t - Mth.sin(t * (float)Math.PI) * sagFactor * Math.min(5.0f, horizontalDist);
+            float cz = dz * t;
+
+            int bl = (int)Mth.lerp(t, (float)hookBlockLight, (float)handBlockLight);
+            int sl = (int)Mth.lerp(t, (float)hookSkyLight, (float)handSkyLight);
+            int light = LightTexture.pack(bl, sl);
+
+            float shade = (k % 2 == 0) ? 0.85f : 1.0f;
+            int rTop = Math.min(255, (int)(cr * shade * 1.15f));
+            int gTop = Math.min(255, (int)(cg * shade * 1.15f));
+            int bTop = Math.min(255, (int)(cb * shade * 1.15f));
+            int rBot = (int)(cr * shade * 0.70f);
+            int gBot = (int)(cg * shade * 0.70f);
+            int bBot = (int)(cb * shade * 0.70f);
+
+            leashConsumer.vertex(poseMat, cx, cy - ny, cz).color(rBot, gBot, bBot, 255).uv2(light).endVertex();
+            leashConsumer.vertex(poseMat, cx, cy + ny, cz).color(rTop, gTop, bTop, 255).uv2(light).endVertex();
+        }
+
+        // 2. 渲染核心线段 RenderType.lineStrip 保证超远距离在像素缩减时依然清晰可见
         VertexConsumer lineConsumer = buffer.getBuffer(RenderType.lineStrip());
         for (int k = 0; k <= steps; k++) {
-            Vec3 p = centerPoints[k];
             float t = (float)k / (float)steps;
-            float nextT = (float)(k + 1) / (float)steps;
-            float px1 = relX * nextT;
-            float py1 = relY * nextT - Mth.sin(nextT * (float)Math.PI) * sagFactor * Math.min(6.0f, horizontalDist);
-            float pz1 = relZ * nextT;
+            float cx = dx * t;
+            float cy = 0.15f + dy * t - Mth.sin(t * (float)Math.PI) * sagFactor * Math.min(5.0f, horizontalDist);
+            float cz = dz * t;
 
-            float dx = px1 - (float)p.x;
-            float dy = py1 - (float)p.y;
-            float dz = pz1 - (float)p.z;
-            float dLen = Mth.sqrt(dx * dx + dy * dy + dz * dz);
-            if (dLen < 1e-4) dLen = 1.0f;
-            dx /= dLen; dy /= dLen; dz /= dLen;
+            float nextT = Math.min(1.0f, (float)(k + 1) / (float)steps);
+            float nx1 = dx * nextT;
+            float ny1 = 0.15f + dy * nextT - Mth.sin(nextT * (float)Math.PI) * sagFactor * Math.min(5.0f, horizontalDist);
+            float nz1 = dz * nextT;
 
-            lineConsumer.vertex(poseMat, (float)p.x, (float)p.y, (float)p.z)
+            float segDx = nx1 - cx;
+            float segDy = ny1 - cy;
+            float segDz = nz1 - cz;
+            float segLen = Mth.sqrt(segDx * segDx + segDy * segDy + segDz * segDz);
+            if (segLen < 1e-4f) segLen = 1.0f;
+            segDx /= segLen; segDy /= segLen; segDz /= segLen;
+
+            lineConsumer.vertex(poseMat, cx, cy, cz)
                     .color(cr, cg, cb, 255)
-                    .normal(normMat, dx, dy, dz)
+                    .normal(normMat, segDx, segDy, segDz)
                     .endVertex();
         }
 
