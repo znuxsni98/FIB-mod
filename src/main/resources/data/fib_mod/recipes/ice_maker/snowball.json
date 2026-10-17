@@ -1,0 +1,20 @@
+{
+  "type": "fib_mod:ice_maker",
+  "fluid_input": {
+    "fluid": "minecraft:water",
+    "amount": 250
+  },
+  "item_input": {
+    "item": "createdieselgenerators:mold",
+    "nbt": {
+      "Mold": "createdieselgenerators:bowl"
+    }
+  },
+  "consume_item": false,
+  "output": {
+    "item": "minecraft:snowball",
+    "count": 1
+  },
+  "processing_time": 40,
+  "energy_per_tick": 64
+}

@@ -24,20 +24,29 @@ public class IceMakerMenu extends AbstractContainerMenu {
     private final ContainerData data;
 
     // 输入槽
-    private static final int INPUT_SLOT = 0;
+    private static final int INPUT_SLOT = IceMakerBlockEntity.INPUT_SLOT;
     // 输入槽-流体
-    private static final int INPUT_SLOT_FLUID = 1;
+    private static final int INPUT_SLOT_FLUID = IceMakerBlockEntity.INPUT_SLOT_FLUID;
     // 输出槽
-    private static final int OUTPUT_SLOT = 2;
+    private static final int OUTPUT_SLOT = IceMakerBlockEntity.OUTPUT_SLOT;
     // 输出槽-流体
-    private static final int OUTPUT_SLOT_FLUID = 3;
+    private static final int OUTPUT_SLOT_FLUID = IceMakerBlockEntity.OUTPUT_SLOT_FLUID;
 
 
-
+    /**
+     * 客户端构造：服务端通过 {@code NetworkHooks.openScreen(player, provider, pos)}
+     * 只把方块坐标发过来，这里自己按坐标去客户端世界里找那个方块实体。
+     */
     public IceMakerMenu(int id, Inventory inv, FriendlyByteBuf buf) {
-        this(id, inv,
-                inv.player.level().getBlockEntity(buf.readBlockPos()),
-                new SimpleContainerData(1));
+        this(id, inv, inv.player.level().getBlockEntity(buf.readBlockPos()));
+    }
+
+    /** 客户端兜底构造：方块实体还没同步到位时用（少见，但 chunk 边界上会出现）。 */
+    public IceMakerMenu(int id, Inventory inv, BlockEntity entity) {
+        this(id, inv, entity,
+                entity instanceof IceMakerBlockEntity be
+                        ? be.getData()
+                        : new SimpleContainerData(IceMakerBlockEntity.DATA_COUNT));
     }
 
 
@@ -52,10 +61,17 @@ public class IceMakerMenu extends AbstractContainerMenu {
 
         this.data = data;
 
-        // 添加玩家背包与快捷栏
-        addPlayerInventory(inv, 7, 83);
-        addPlayerHotbar(inv, 7, 141);
+        // 添加玩家背包与快捷栏。
+        // 这里的坐标是"物品"的左上角，槽位方框画在 (x-1, y-1)。
+        // 贴图里量出来的方框顶边在 y=83/101/119/141、左边在 x=7，所以物品坐标是 8 / 84、102、120 / 142。
+        // 之前写成 7 / 83 和 141，整套背包（含标题）就整体偏到左上 1 像素了。
+        addPlayerInventory(inv, 8, 84);
+        addPlayerHotbar(inv, 8, 142);
 
+        // ⚠ 这里注册的条目数是【本对象】data.getCount()。
+        // 客户端原来传的是 new SimpleContainerData(1)，于是服务端推过来的下标 >= 1 的数据
+        // （总进度、能量、液面）全部找不到接收者被丢掉 —— 表现就是进度条永远不动、
+        // 液面永远是空的。客户端必须用和方块实体同样长度的 ContainerData。
         addDataSlots(data);
     }
 
@@ -94,110 +110,66 @@ public class IceMakerMenu extends AbstractContainerMenu {
     }
 
 
-    //Shift 点击快速移动物品的逻辑。
-    //槽位数
-    private static final int TE_SLOT_COUNT = 4;
+    // ========= 槽位区间 =========
+    /** 机器自身槽位数 */
+    private static final int TE_SLOT_COUNT = IceMakerBlockEntity.SLOT_COUNT;
+    private static final int TE_START = 0;
+    private static final int TE_END = TE_START + TE_SLOT_COUNT;      // [0, 4)
+    private static final int INV_START = TE_END;
+    private static final int INV_END = INV_START + 27;               // [4, 31)
+    private static final int HOTBAR_START = INV_END;
+    private static final int HOTBAR_END = HOTBAR_START + 9;          // [31, 40)
 
+    /**
+     * Shift 点击快速移动。
+     *
+     * <p>上一版有个真实的吞物品 bug：{@code if (index == OUTPUT_SLOT) { ...移动... }}
+     * 后面跟了一条 {@code else if (index >= TE_END && ...)} 的链，两者并不是同一条 if/else，
+     * 于是输出槽分支执行完还会继续往下走到最后的 {@code else return ItemStack.EMPTY} ——
+     * 物品确实动过了，但方法返回空栈，客户端据此认为什么都没发生，槽位就不同步了。
+     *
+     * <p>这里改成标准的二分支结构：机器槽 ↔ 玩家背包，互不干扰。
+     */
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
 
-        // 先拿到当前被 Shift 点击的槽位
         Slot slot = this.slots.get(index);
-
-        // 如果槽位不存在，或者槽位里没有物品，直接返回空
         if (slot == null || !slot.hasItem()) {
             return ItemStack.EMPTY;
         }
 
-        // 当前槽位中的物品
         ItemStack stack = slot.getItem();
-
-        // 复制一份原物品，作为方法返回值
         ItemStack copy = stack.copy();
 
-        // ========= 槽位区间划分 =========
-        // 机器槽位：
-        // 0 -> 输入槽
-        // 2 -> 输入槽-流体
-        // 2 -> 输出槽
-        // 3 -> 输出槽-流体
-        final int INPUT_SLOT = 0;
-        final int INPUT_SLOT_FLUID = 1;
-        final int OUTPUT_SLOT = 2;
-        final int OUTPUT_SLOT_FLUID = 3;
-
-        final int TE_START = 0;
-        final int TE_END = TE_START + TE_SLOT_COUNT;   // [0, 2)
-
-        // 玩家主背包：27 格
-        final int PLAYER_INV_START = TE_END;
-        final int PLAYER_INV_END = PLAYER_INV_START + 27;   // [2, 29)
-
-        // 玩家快捷栏：9 格
-        final int HOTBAR_START = PLAYER_INV_END;
-        final int HOTBAR_END = HOTBAR_START + 9;            // [29, 38)
-
-        // ========= 快速移动逻辑 =========
-
-        // 如果点击的是输出槽
-        // 优先移动到快捷栏，快捷栏放不下再移动到主背包
-        if (index == OUTPUT_SLOT) {
-            if (!this.moveItemStackTo(stack, HOTBAR_START, HOTBAR_END, false)) {
-                if (!this.moveItemStackTo(stack, PLAYER_INV_START, PLAYER_INV_END, false)) {
-                    return ItemStack.EMPTY;
-                }
-            }
-        }
-
-        // 如果点击的是输出槽-流体
-        // 优先移动到快捷栏，快捷栏放不下再移动到主背包
-        if (index == OUTPUT_SLOT_FLUID) {
-            if (!this.moveItemStackTo(stack, HOTBAR_START, HOTBAR_END, false)) {
-                if (!this.moveItemStackTo(stack, PLAYER_INV_START, PLAYER_INV_END, false)) {
-                    return ItemStack.EMPTY;
-                }
-            }
-        }
-
-        // 如果点击的是输入槽
-        // 直接移动到玩家背包 + 快捷栏
-        else if (index == INPUT_SLOT) {
-            if (!this.moveItemStackTo(stack, PLAYER_INV_START, HOTBAR_END, false)) {
+        if (index < TE_END) {
+            // ---- 机器槽 -> 玩家背包 + 快捷栏 ----
+            if (!this.moveItemStackTo(stack, INV_START, HOTBAR_END, true)) {
                 return ItemStack.EMPTY;
             }
-        }
-
-        // 如果点击的是输入槽-流体
-        // 直接移动到玩家背包 + 快捷栏
-        else if (index == INPUT_SLOT_FLUID) {
-            if (!this.moveItemStackTo(stack, PLAYER_INV_START, HOTBAR_END, false)) {
+        } else {
+            // ---- 玩家背包 -> 机器 ----
+            // 只往两个输入槽送。输出槽由机器自己填，玩家不能手动塞。
+            // 先试流体槽（mayPlace 会挡住非流体容器），搬不动再试物品槽。
+            // 两次都搬不动就返回空栈，让原槽纹丝不动。
+            boolean moved = this.moveItemStackTo(stack, INPUT_SLOT_FLUID, INPUT_SLOT_FLUID + 1, false)
+                    || this.moveItemStackTo(stack, INPUT_SLOT, INPUT_SLOT + 1, false);
+            if (!moved) {
                 return ItemStack.EMPTY;
             }
-        }
-
-        // 如果点击的是玩家背包或快捷栏
-        // 只尝试进入输入槽，不会进入输出槽
-        else if (index >= TE_END && index < HOTBAR_END) {
-            if (!this.moveItemStackTo(stack, INPUT_SLOT, INPUT_SLOT + 1, false)) {
-                return ItemStack.EMPTY;
-            }
-        }
-
-        // 其他异常情况，直接返回空
-        else {
-            return ItemStack.EMPTY;
         }
 
         // ========= 更新原槽位状态 =========
-
-        // 如果原物品已经被搬空，就把原槽位设为空
         if (stack.isEmpty()) {
             slot.set(ItemStack.EMPTY);
         } else {
             slot.setChanged();
         }
 
-        // 触发槽位取出逻辑
+        // 一个都没搬走 —— 返回空栈，别让客户端以为动过了
+        if (stack.getCount() == copy.getCount()) {
+            return ItemStack.EMPTY;
+        }
+
         slot.onTake(player, stack);
 
         return copy;
@@ -216,5 +188,9 @@ public class IceMakerMenu extends AbstractContainerMenu {
 
     public IceMakerBlockEntity getBlockEntity() {
         return this.blockEntity;
+    }
+
+    public ContainerData getData() {
+        return this.data;
     }
 }

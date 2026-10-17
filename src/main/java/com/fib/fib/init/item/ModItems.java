@@ -1,6 +1,7 @@
 package com.fib.fib.init.item;
 
 import com.fib.fib.FIBMod;
+import com.fib.fib.init.item.custom.IceBallItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -25,6 +26,9 @@ public class ModItems {
 
     public static final RegistryObject<Item> SOLAR_PANEL_CONTROLLER =
             ITEMS.register("solar_panel_controller", () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> ICE_BALL =
+            ITEMS.register("ice_ball", () -> new IceBallItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

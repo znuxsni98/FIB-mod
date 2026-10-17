@@ -2,10 +2,13 @@ package com.fib.fib.init.item;
 
 import com.fib.fib.FIBMod;
 import com.fib.fib.init.block.ModBlocks;
+import com.fib.fib.init.potion.ModPotions;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
@@ -24,6 +27,12 @@ public class ModCreativeModeTabs {
                         pOutput.accept(ModItems.SPRING_AND_AUTUMN_INTESTINES.get());
                         pOutput.accept(ModItems.WILD_DOG_MILK.get());
                         pOutput.accept(ModItems.SOLAR_PANEL_CONTROLLER.get());
+                        pOutput.accept(ModItems.ICE_BALL.get());
+
+                        pOutput.accept(PotionUtils.setPotion(new ItemStack(Items.POTION), ModPotions.FREEZING.get()));
+                        pOutput.accept(PotionUtils.setPotion(new ItemStack(Items.POTION), ModPotions.LONG_FREEZING.get()));
+                        pOutput.accept(PotionUtils.setPotion(new ItemStack(Items.SPLASH_POTION), ModPotions.FREEZING.get()));
+                        pOutput.accept(PotionUtils.setPotion(new ItemStack(Items.LINGERING_POTION), ModPotions.FREEZING.get()));
 
 
                         pOutput.accept(ModBlocks.ICE_MAKER.get());

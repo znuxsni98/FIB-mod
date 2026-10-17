@@ -1,0 +1,13 @@
+{
+  "type": "fib_mod:ice_maker",
+  "item_input": {
+    "item": "minecraft:water_bucket"
+  },
+  "consume_item": true,
+  "output": {
+    "item": "minecraft:powder_snow_bucket",
+    "count": 1
+  },
+  "processing_time": 200,
+  "energy_per_tick": 128
+}

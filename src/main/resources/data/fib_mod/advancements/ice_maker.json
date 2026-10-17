@@ -1,0 +1,36 @@
+{
+  "parent": "fib_mod:root",
+  "display": {
+    "icon": {
+      "item": "fib_mod:ice_maker"
+    },
+    "title": {
+      "translate": "advancements.fib_mod.ice_maker.title"
+    },
+    "description": {
+      "translate": "advancements.fib_mod.ice_maker.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "has_ice_maker": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "fib_mod:ice_maker"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_ice_maker"
+    ]
+  ]
+}

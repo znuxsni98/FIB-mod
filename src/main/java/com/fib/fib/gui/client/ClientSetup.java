@@ -1,13 +1,15 @@
 package com.fib.fib.gui.client;
 
 import com.fib.fib.FIBMod;
-import com.fib.fib.client.render.RuMengDollBlockEntityRenderer;
+import com.fib.fib.client.render.block.RuMengDollBlockEntityRenderer;
 import com.fib.fib.gui.container.screen.corpse.Corpse1Screen;
 import com.fib.fib.gui.container.screen.corpse.Corpse2Screen;
 import com.fib.fib.gui.container.screen.CrateScreen;
 import com.fib.fib.gui.container.screen.TrashCanScreen;
+import com.fib.fib.client.render.entity.IceBallRenderer;
 import com.fib.fib.init.ModBlockEntities;
 import com.fib.fib.init.ModMenuTypes;
+import com.fib.fib.init.entity.ModEntities;
 import com.fib.fib.gui.container.screen.IceMakerScreen;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraftforge.api.distmarker.Dist;
@@ -50,6 +52,11 @@ public class ClientSetup {
         event.registerBlockEntityRenderer(
                 ModBlockEntities.RU_MENG_DOLL_BE.get(),
                 RuMengDollBlockEntityRenderer::new
+        );
+
+        event.registerEntityRenderer(
+                ModEntities.ICE_BALL.get(),
+                IceBallRenderer::new
         );
     }
 

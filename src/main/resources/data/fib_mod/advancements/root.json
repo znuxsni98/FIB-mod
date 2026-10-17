@@ -1,0 +1,22 @@
+{
+  "display": {
+    "icon": {
+      "item": "fib_mod:fib_logo_mod"
+    },
+    "title": {
+      "translate": "advancements.fib_mod.root.title"
+    },
+    "description": {
+      "translate": "advancements.fib_mod.root.description"
+    },
+    "frame": "task",
+    "background": "minecraft:textures/block/ice.png",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "tick": {
+      "trigger": "minecraft:tick"
+    }
+  }
+}

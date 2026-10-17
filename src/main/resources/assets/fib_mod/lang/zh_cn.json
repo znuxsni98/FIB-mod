@@ -6,9 +6,10 @@
   "item.fib_mod.spring_and_autumn_intestines": "春秋肠",
   "item.fib_mod.wild_dog_milk": "野生狗奶",
   "item.fib_mod.solar_panel_controller": "太阳能板控制器",
+  "item.fib_mod.ice_ball": "冰球",
 
 
-  "block.fib_mod.ice_maker": "制冰机-配方未完成",
+  "block.fib_mod.ice_maker": "制冰机",
   "block.fib_mod.radio_station": "电台",
   "block.fib_mod.engineer_workbench": "工程师工作台",
   "block.fib_mod.scientists_experimental_platform": "科学家实验台",
@@ -56,7 +57,7 @@
 
   "be.title.corpse2": "尸体",
   "be.title.corpse1": "尸体",
-  "be.title.ice_maker": "制冰机 未完成",
+  "be.title.ice_maker": "制冰机",
   "be.title.crate": "板条箱",
   "be.title.trash_can": "垃圾桶",
 
@@ -69,15 +70,46 @@
   "fib_mod.gui.goggles.temperature": "温度：",
   "fib_mod.gui.goggles.facing": "朝向：",
   "fib_mod.gui.goggles.energy": "储能：",
+  "fib_mod.gui.goggles.ice_maker.stats": "制冰机状态：",
+  "fib_mod.gui.goggles.ice_maker.progress": "进度：",
+  "fib_mod.gui.goggles.ice_maker.fluid": "流体：",
 
   "fib_mod.generic.unit.fe_per_tick": "FE/t",
   "fib_mod.generic.unit.fe": "FE",
   "fib_mod.generic.unit.celsius": "°C",
+  "fib_mod.generic.unit.tick": "tick",
+  "fib_mod.generic.unit.mb": "mB",
+
+  "fib_mod.jei.ice_maker.title": "制冰机",
+  "fib_mod.jei.ice_maker.time": "耗时：%s tick",
+  "fib_mod.jei.ice_maker.energy_per_tick": "耗电：%s FE/t",
+  "fib_mod.jei.ice_maker.recycle": "回流：%s tick（机器空闲且输入槽空时）",
 
   "fib_mod.direction.north": "北",
   "fib_mod.direction.south": "南",
   "fib_mod.direction.west": "西",
   "fib_mod.direction.east": "东",
   "fib_mod.direction.up": "上",
-  "fib_mod.direction.down": "下"
+  "fib_mod.direction.down": "下",
+
+
+  "entity.fib_mod.hajji_author": "哈吉作",
+  "entity.fib_mod.dimensional_crack": "维度裂缝",
+  "entity.fib_mod.ice_ball": "冰球",
+
+  "effect.fib_mod.freezing": "冰冻",
+
+  "advancements.fib_mod.root.title": "菌染亵渎",
+  "advancements.fib_mod.root.description": "菌染亵渎",
+  "advancements.fib_mod.ice_maker.title": "冰冰冰",
+  "advancements.fib_mod.ice_maker.description": "“队友制冰机关一下”",
+
+  "item.minecraft.potion.effect.freezing": "冰冻药水",
+  "item.minecraft.potion.effect.long_freezing": "冰冻药水",
+  "item.minecraft.splash_potion.effect.freezing": "喷溅型冰冻药水",
+  "item.minecraft.splash_potion.effect.long_freezing": "喷溅型冰冻药水",
+  "item.minecraft.lingering_potion.effect.freezing": "滞留型冰冻药水",
+  "item.minecraft.lingering_potion.effect.long_freezing": "滞留型冰冻药水",
+  "item.minecraft.tipped_arrow.effect.freezing": "冰冻之箭",
+  "item.minecraft.tipped_arrow.effect.long_freezing": "冰冻之箭"
 }

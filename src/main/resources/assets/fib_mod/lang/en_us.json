@@ -6,9 +6,10 @@
   "item.fib_mod.spring_and_autumn_intestines": "Spring And Autumn Intestines",
   "item.fib_mod.wild_dog_milk": "Wild Dog Milk",
   "item.fib_mod.solar_panel_controller": "Solar Panel Controller",
+  "item.fib_mod.ice_ball": "Ice Ball",
 
 
-  "block.fib_mod.ice_maker": "ice maker",
+  "block.fib_mod.ice_maker": "Ice Maker",
   "block.fib_mod.radio_station": "radio station",
   "block.fib_mod.engineer_workbench": "engineer workbench",
   "block.fib_mod.scientists_experimental_platform": "scientists experimental platform",
@@ -57,7 +58,7 @@
 
   "be.title.corpse1": "corpse",
   "be.title.corpse2": "corpse",
-  "be.title.ice_maker": "ice_maker",
+  "be.title.ice_maker": "Ice Maker",
   "be.title.crate": "Crate",
   "be.title.trash_can": "Trash Can",
 
@@ -70,15 +71,46 @@
   "fib_mod.gui.goggles.temperature": "Temperature:",
   "fib_mod.gui.goggles.facing": "Facing:",
   "fib_mod.gui.goggles.energy": "Energy:",
+  "fib_mod.gui.goggles.ice_maker.stats": "Ice Maker Status:",
+  "fib_mod.gui.goggles.ice_maker.progress": "Progress:",
+  "fib_mod.gui.goggles.ice_maker.fluid": "Fluid:",
 
   "fib_mod.generic.unit.fe_per_tick": "FE/t",
   "fib_mod.generic.unit.fe": "FE",
   "fib_mod.generic.unit.celsius": "°C",
+  "fib_mod.generic.unit.tick": "tick",
+  "fib_mod.generic.unit.mb": "mB",
+
+  "fib_mod.jei.ice_maker.title": "Ice Maker",
+  "fib_mod.jei.ice_maker.time": "Time: %s ticks",
+  "fib_mod.jei.ice_maker.energy_per_tick": "Energy: %s FE/t",
+  "fib_mod.jei.ice_maker.recycle": "Recycle: %s ticks (idle + input slot empty)",
 
   "fib_mod.direction.north": "North",
   "fib_mod.direction.south": "South",
   "fib_mod.direction.west": "West",
   "fib_mod.direction.east": "East",
   "fib_mod.direction.up": "Up",
-  "fib_mod.direction.down": "Down"
+  "fib_mod.direction.down": "Down",
+
+
+  "entity.fib_mod.hajji_author": "Hajji Author",
+  "entity.fib_mod.dimensional_crack": "Dimensional Crack",
+  "entity.fib_mod.ice_ball": "Ice Ball",
+
+  "effect.fib_mod.freezing": "Freezing",
+
+  "advancements.fib_mod.root.title": "Fungal Defilement",
+  "advancements.fib_mod.root.description": "Fungal Defilement",
+  "advancements.fib_mod.ice_maker.title": "Ice Ice Ice",
+  "advancements.fib_mod.ice_maker.description": "“Teammate, turn off the ice maker”",
+
+  "item.minecraft.potion.effect.freezing": "Potion of Freezing",
+  "item.minecraft.potion.effect.long_freezing": "Potion of Freezing",
+  "item.minecraft.splash_potion.effect.freezing": "Splash Potion of Freezing",
+  "item.minecraft.splash_potion.effect.long_freezing": "Splash Potion of Freezing",
+  "item.minecraft.lingering_potion.effect.freezing": "Lingering Potion of Freezing",
+  "item.minecraft.lingering_potion.effect.long_freezing": "Lingering Potion of Freezing",
+  "item.minecraft.tipped_arrow.effect.freezing": "Arrow of Freezing",
+  "item.minecraft.tipped_arrow.effect.long_freezing": "Arrow of Freezing"
 }

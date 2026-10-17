@@ -1,0 +1,142 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"standby": {
+			"loop": true,
+			"animation_length": 1.6,
+			"bones": {
+				"left_hand": {
+					"rotation": {
+						"vector": [34.8423, -2.5587, 7.0524]
+					}
+				},
+				"right_hand": {
+					"rotation": {
+						"0.0": {
+							"post": {
+								"vector": [-64.0864, 66.1501, 3.7854]
+							},
+							"lerp_mode": "catmullrom"
+						},
+						"0.8": {
+							"post": {
+								"vector": [-61.5882, 66.1501, 3.7877]
+							},
+							"lerp_mode": "catmullrom"
+						},
+						"1.6": {
+							"post": {
+								"vector": [-64.09, 66.15, 3.79]
+							},
+							"lerp_mode": "catmullrom"
+						}
+					},
+					"position": {
+						"vector": [0, -0.625, -1.5]
+					}
+				},
+				"whole": {
+					"position": {
+						"0.0": {
+							"vector": [0, 5, 0]
+						},
+						"0.8": {
+							"vector": [0, 5.5, 0]
+						},
+						"1.6": {
+							"vector": [0, 5, 0]
+						}
+					}
+				},
+				"right_leg": {
+					"rotation": {
+						"0.0": {
+							"post": {
+								"vector": [10, 0, 0]
+							},
+							"lerp_mode": "catmullrom"
+						},
+						"0.8": {
+							"post": {
+								"vector": [9, 0, 0]
+							},
+							"lerp_mode": "catmullrom"
+						},
+						"1.6": {
+							"post": {
+								"vector": [10, 0, 0]
+							},
+							"lerp_mode": "catmullrom"
+						}
+					}
+				},
+				"left_leg": {
+					"rotation": {
+						"0.0": {
+							"post": {
+								"vector": [2.5, 0, 0]
+							},
+							"lerp_mode": "catmullrom"
+						},
+						"0.8": {
+							"post": {
+								"vector": [4, 0, 0]
+							},
+							"lerp_mode": "catmullrom"
+						},
+						"1.6": {
+							"post": {
+								"vector": [2.5, 0, 0]
+							},
+							"lerp_mode": "catmullrom"
+						}
+					}
+				},
+				"nutrition_bar_scepter": {
+					"rotation": {
+						"vector": [0, 0, 0]
+					},
+					"position": {
+						"vector": [0, -0.25, 0]
+					}
+				},
+				"left_lower_arm": {
+					"rotation": {
+						"vector": [0, 0, 40]
+					},
+					"position": {
+						"vector": [0.375, 1, 0]
+					}
+				},
+				"right_lower_arm": {
+					"rotation": {
+						"vector": [-16.7365, -5.1878, -16.7363]
+					},
+					"position": {
+						"vector": [0, 0.25, 0]
+					}
+				},
+				"right_lower_leg": {
+					"rotation": {
+						"vector": [25, 0, 0]
+					}
+				},
+				"left_lower_leg": {
+					"rotation": {
+						"vector": [10, 0, 0]
+					}
+				},
+				"nutrition_paste": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, -180, 0]
+						},
+						"1.56": {
+							"vector": [0, 0, 0]
+						}
+					}
+				}
+			}
+		}
+	}
+}

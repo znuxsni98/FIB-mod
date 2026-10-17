@@ -1,0 +1,17 @@
+{
+  "type": "fib_mod:ice_maker",
+  "fluid_input": {
+    "fluid": "minecraft:water",
+    "amount": 1000
+  },
+  "item_input": {
+    "item": "minecraft:air"
+  },
+  "consume_item": true,
+  "output": {
+    "item": "minecraft:ice",
+    "count": 1
+  },
+  "processing_time": 100,
+  "energy_per_tick": 64
+}

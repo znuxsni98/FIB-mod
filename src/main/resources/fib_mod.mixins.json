@@ -5,6 +5,8 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "fib_mod.refmap.json",
   "mixins": [
+    "LivingEntityMixin",
+    "EntityMixin"
   ],
   "client": [
   ],

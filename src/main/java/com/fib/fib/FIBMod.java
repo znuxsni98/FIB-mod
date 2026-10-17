@@ -1,12 +1,15 @@
 package com.fib.fib;
 
-//import com.fib.fib.entity.ModEntities;
 import com.fib.fib.init.ModBlockEntities;
 import com.fib.fib.init.ModMenuTypes;
 import com.fib.fib.init.Villager.ModVillager;
 import com.fib.fib.init.block.ModBlocks;
+import com.fib.fib.init.effect.ModEffects;
+import com.fib.fib.init.entity.ModEntities;
+import com.fib.fib.init.potion.ModPotions;
 import com.fib.fib.init.item.ModCreativeModeTabs;
 import com.fib.fib.init.item.ModItems;
+import com.fib.fib.init.recipe.ModRecipes;
 import com.fib.fib.init.sound.ModSounds;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
@@ -46,7 +49,10 @@ public class FIBMod {
         ModBlockEntities.register(modEventBus);
         ModVillager.register(modEventBus);
         ModMenuTypes.register(modEventBus);
-//        ModEntities.register(modEventBus);
+        ModEntities.register(modEventBus);
+        ModEffects.register(modEventBus);
+        ModPotions.register(modEventBus);
+        ModRecipes.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);

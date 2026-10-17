@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -25,6 +26,7 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraftforge.fluids.FluidUtil;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,6 +103,18 @@ public class Ice_Maker extends Block implements EntityBlock {
     public InteractionResult use(BlockState state, Level level,
                                  BlockPos pos, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
+
+        // 潜行 + 手里拿着装了流体的容器（桶、储罐…）时，走 Forge 的流体交互：
+        // 往机器里灌，或者把机器里的抽出来（具体方向由 FluidUtil 按容器和储罐的状态自己定）。
+        // 不加这一条的话，手里拿着水桶右键只会开界面，玩家没法快速喂水。
+        ItemStack held = player.getItemInHand(hand);
+        if (player.isShiftKeyDown() && FluidUtil.getFluidContained(held).isPresent()) {
+            // 客户端必须返回成功，否则手臂不会摆、音效不会响；
+            // 真正的转移只在服务端发生（interactWithFluidHandler 内部自己区分两侧）。
+            return FluidUtil.interactWithFluidHandler(player, hand, level, pos, hit.getDirection())
+                    ? InteractionResult.sidedSuccess(level.isClientSide())
+                    : InteractionResult.PASS;
+        }
 
         // 方块被玩家右键时打开 GUI 的入口
         if (!level.isClientSide()) {

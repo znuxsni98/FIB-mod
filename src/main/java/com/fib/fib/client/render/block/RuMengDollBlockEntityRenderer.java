@@ -1,4 +1,4 @@
-package com.fib.fib.client.render;
+package com.fib.fib.client.render.block;
 
 import com.fib.fib.blockentity.RuMengDollBlockEntity;
 import com.fib.fib.init.block.custom.Ru_Meng_Doll;
