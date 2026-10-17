@@ -109,6 +109,12 @@ public class GrapplingHookEntity extends Projectile {
     public GrapplingHookEntity(EntityType<? extends Projectile> entityType, Level level) {
         super(entityType, level);
         this.noPhysics = false;
+        this.noCulling = true;
+    }
+
+    @Override
+    public boolean shouldRenderAtSqrDistance(double distance) {
+        return distance < 4096.0;
     }
 
     public GrapplingHookEntity(Level level, Player shooter, ItemStack gunStack) {
