@@ -28,12 +28,20 @@ public class HookMiningTogglePacket {
                     held = player.getOffhandItem();
                 }
                 if (held.getItem() instanceof GrapplingHookGunItem) {
-                    if (GrapplingHookGunItem.hasGrappleModule(held)) {
+                    if (GrapplingHookGunItem.isGrappleModuleEffective(held)) {
                         GrapplingHookGunItem.cycleGrappleMode(held, player);
-                    } else if (GrapplingHookGunItem.hasMiningModule(held)) {
+                    } else if (GrapplingHookGunItem.isMiningModuleEffective(held)) {
                         GrapplingHookGunItem.cycleMiningMode(held, player);
-                    } else {
-                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("fib_mod.hook.need_sub_module").withStyle(net.minecraft.ChatFormatting.RED), true);
+                    }
+                    // 未安装相关模块时不提示。
+
+                    // 立即把新模式同步到已发射的钩爪，使钻头模式即时切换
+                    for (com.fib.fib.init.entity.custom.GrapplingHookEntity hook
+                            : player.level().getEntitiesOfClass(
+                                    com.fib.fib.init.entity.custom.GrapplingHookEntity.class,
+                                    player.getBoundingBox().inflate(256.0),
+                                    h -> h.getShooter() == player && !h.isRemoved())) {
+                        hook.refreshGunState(player);
                     }
                 }
             }

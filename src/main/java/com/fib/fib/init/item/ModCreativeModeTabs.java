@@ -27,6 +27,12 @@ public class ModCreativeModeTabs {
                         pOutput.accept(ModItems.SPRING_AND_AUTUMN_INTESTINES.get());
                         pOutput.accept(ModItems.WILD_DOG_MILK.get());
                         pOutput.accept(ModItems.SOLAR_PANEL_CONTROLLER.get());
+                        pOutput.accept(ModItems.DUAL_HOOK.get());
+                        pOutput.accept(ModItems.GRAPPLING_HOOK_GUN.get());
+                        pOutput.accept(ModItems.BASIC_HOOK.get());
+                        pOutput.accept(ModItems.DUAL_HOOK_MODULE.get());
+                        pOutput.accept(ModItems.MINING_MODULE.get());
+                        pOutput.accept(ModItems.GRAPPLE_MODULE.get());
                         pOutput.accept(ModItems.ICE_BALL.get());
                         pOutput.accept(ModItems.GRAPPLING_HOOK_GUN.get());
                         pOutput.accept(ModItems.BASIC_HOOK.get());

@@ -22,8 +22,9 @@ public class GrapplingHookScreen extends AbstractContainerScreen<GrapplingHookMe
         this.imageWidth = 176;
         this.imageHeight = 186;
         this.inventoryLabelY = 92;
-        this.titleLabelX = 8;
-        this.titleLabelY = 6;
+        // 隐藏原版容器标题
+        this.titleLabelX = -9999;
+        this.titleLabelY = -9999;
     }
 
     @Override
@@ -47,9 +48,11 @@ public class GrapplingHookScreen extends AbstractContainerScreen<GrapplingHookMe
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        super.renderLabels(guiGraphics, mouseX, mouseY);
-        guiGraphics.drawString(this.font, Component.translatable("fib_mod.gui.grappling_hook.upgrades"), 16, 8, 0x404040, false);
-        guiGraphics.drawString(this.font, Component.translatable("fib_mod.gui.grappling_hook.storage"), 94, 8, 0x404040, false);
+        // 大标题（“钩爪枪改装与存储”）已通过贴图呈现，这里只画分区小标题
+        guiGraphics.drawString(this.font,
+                Component.translatable("fib_mod.gui.grappling_hook.upgrades"), 16, 6, 0x404040, false);
+        guiGraphics.drawString(this.font,
+                Component.translatable("fib_mod.gui.grappling_hook.storage"), 94, 20, 0x404040, false);
     }
 
     @Override

@@ -4,6 +4,8 @@ import com.fib.fib.FIBMod;
 import com.fib.fib.network.packet.HookClimbPacket;
 import com.fib.fib.network.packet.HookMiningTogglePacket;
 import com.fib.fib.network.packet.HookModeSwitchPacket;
+import com.fib.fib.network.packet.HookOpenGuiPacket;
+import com.fib.fib.network.packet.HookQuickShootPacket;
 import com.fib.fib.network.packet.SyncPlayerMotionPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -60,6 +62,18 @@ public class ModMessages {
                 .decoder(com.fib.fib.network.packet.HookVaultPacket::new)
                 .encoder(com.fib.fib.network.packet.HookVaultPacket::toBytes)
                 .consumerMainThread(com.fib.fib.network.packet.HookVaultPacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(HookOpenGuiPacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(HookOpenGuiPacket::new)
+                .encoder(HookOpenGuiPacket::toBytes)
+                .consumerMainThread(HookOpenGuiPacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(HookQuickShootPacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(HookQuickShootPacket::new)
+                .encoder(HookQuickShootPacket::toBytes)
+                .consumerMainThread(HookQuickShootPacket::handle)
                 .add();
     }
 

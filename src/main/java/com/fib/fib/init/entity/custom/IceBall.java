@@ -1,5 +1,6 @@
 package com.fib.fib.init.entity.custom;
 
+import com.fib.fib.init.effect.ModEffects;
 import com.fib.fib.init.entity.ModEntities;
 import com.fib.fib.init.item.ModItems;
 import net.minecraft.core.particles.ItemParticleOption;
@@ -7,10 +8,11 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Mth;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Blaze;
 import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -20,9 +22,19 @@ import net.minecraft.world.phys.HitResult;
 
 /**
  * 冰球投射物实体 (Throwable Ice Ball Projectile)。
- * 继承自 ThrowableItemProjectile，支持碰撞动态速度伤害加成与击碎粒子音效。
+ * 继承自 ThrowableItemProjectile，命中造成固定伤害，对烈焰人有额外伤害，
+ * 并有概率使目标获得冰冻效果。
  */
 public class IceBall extends ThrowableItemProjectile {
+
+    /** 基础伤害。 */
+    private static final float BASE_DAMAGE = 4.0F;
+    /** 对烈焰人的额外伤害（同雪球特攻）。 */
+    private static final float BLAZE_BONUS_DAMAGE = 3.0F;
+    /** 命中后施加冰冻效果的概率。 */
+    private static final float FREEZE_CHANCE = 0.8F;
+    /** 冰冻效果持续时间（8 秒 = 160 tick）。 */
+    private static final int FREEZE_TICKS = 160;
 
     /** 原版实体反序列化或实体注册时需要的标准构造函数 */
     public IceBall(EntityType<? extends IceBall> type, Level level) {
@@ -73,19 +85,29 @@ public class IceBall extends ThrowableItemProjectile {
     }
 
     /**
-     * 命中活体生物时的伤害计算逻辑。
+     * 命中活体生物时的伤害与冰冻结算。
      */
     @Override
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
         Entity target = result.getEntity();
-        
-        // 伤害与投射物撞击时的速度成正比：速度越大，砸得越疼！
-        float speed = (float) getDeltaMovement().length();
-        int damage = Mth.ceil(Mth.clamp(speed * 1.395F, 0.0F, (float) Integer.MAX_VALUE));
-        
+
+        // 基础伤害 + 对烈焰人的额外伤害（与雪球特攻一致）
+        float damage = BASE_DAMAGE;
+        if (target instanceof Blaze) {
+            damage += BLAZE_BONUS_DAMAGE;
+        }
+
         // 使用投掷物伤害源扣除目标血量
-        target.hurt(damageSources().thrown(this, getOwner()), (float) damage);
+        target.hurt(damageSources().thrown(this, getOwner()), damage);
+
+        // 有概率使目标获得冰冻效果（8 秒）
+        if (!level().isClientSide
+                && target instanceof LivingEntity living
+                && living.isAlive()
+                && level().getRandom().nextFloat() < FREEZE_CHANCE) {
+            living.addEffect(new MobEffectInstance(ModEffects.FREEZING.get(), FREEZE_TICKS), getOwner());
+        }
     }
 
     /**

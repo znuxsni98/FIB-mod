@@ -43,6 +43,15 @@ public class GrapplingHookMenu extends AbstractContainerMenu {
         addSlot(new SlotItemHandler(upgradesHandler, 0, 16, 20) {
             @Override
             public boolean mayPlace(@NotNull ItemStack stack) {
+                boolean dualItem = stack.getItem() instanceof com.fib.fib.init.item.custom.hook.DualHookItem;
+                // 实时读取槽位 4，而不是构造时的 gunStack 快照：
+                // 否则刚放入双钩模块时 NBT 尚未保存，会导致双头钩爪放不进去
+                boolean dualModule = upgradesHandler.getStackInSlot(4).getItem()
+                        instanceof com.fib.fib.init.item.custom.hook.DualHookModuleItem;
+                // 双钩模块与双头钩爪必须配套：装了模块只能放双头钩爪，未装模块不能放双头钩爪
+                if (dualModule != dualItem) {
+                    return false;
+                }
                 return stack.getItem() instanceof IHookMaterial;
             }
 
@@ -107,6 +116,22 @@ public class GrapplingHookMenu extends AbstractContainerMenu {
             public int getMaxStackSize() {
                 return 1;
             }
+
+            @Override
+            public void set(@NotNull ItemStack stack) {
+                boolean wasDual = getItem().getItem() instanceof com.fib.fib.init.item.custom.hook.DualHookModuleItem;
+                boolean willDual = stack.getItem() instanceof com.fib.fib.init.item.custom.hook.DualHookModuleItem;
+
+                // 放入双钩模块前：记住当前模式
+                if (!wasDual && willDual) {
+                    GrapplingHookGunItem.rememberPreDualMode(gunStack);
+                }
+                super.set(stack);
+                // 卸下双钩模块后：恢复此前模式
+                if (wasDual && !willDual) {
+                    GrapplingHookGunItem.restorePreDualMode(gunStack);
+                }
+            }
         });
 
         // 槽位 5: 钩爪模块槽（挖掘模块）
@@ -122,11 +147,12 @@ public class GrapplingHookMenu extends AbstractContainerMenu {
             }
         });
 
-        // 2. 钩爪存储仓槽位 (16 格, 4x4, Slots 6 ~ 21)
-        for (int row = 0; row < 4; row++) {
+        // 2. 钩爪存储仓槽位 (8 格, 4x2, Slots 6 ~ 13)
+        // 贴图中第一格框左上角 (93,33)，槽位填物品坐标，故为 (94,34)
+        for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 4; col++) {
                 int slotIndex = row * 4 + col;
-                addSlot(new SlotItemHandler(storageHandler, slotIndex, 94 + col * 18, 18 + row * 18));
+                addSlot(new SlotItemHandler(storageHandler, slotIndex, 94 + col * 18, 34 + row * 18));
             }
         }
 
@@ -161,6 +187,12 @@ public class GrapplingHookMenu extends AbstractContainerMenu {
             if (held.getItem() instanceof GrapplingHookGunItem) {
                 GrapplingHookGunItem.saveUpgradesHandler(held, upgradesHandler);
                 GrapplingHookGunItem.saveStorageHandler(held, storageHandler);
+
+                // 双钩模块被卸下时，强制卸载双头钩爪并归还给玩家
+                ItemStack ejected = GrapplingHookGunItem.validateDualHookDependency(held);
+                if (!ejected.isEmpty() && !player.getInventory().add(ejected)) {
+                    player.drop(ejected, false);
+                }
             }
         }
     }
@@ -173,9 +205,9 @@ public class GrapplingHookMenu extends AbstractContainerMenu {
             ItemStack slotStack = slot.getItem();
             itemstack = slotStack.copy();
 
-            // 升级槽 (0-5) 或存储仓 (6-21) -> 移动到玩家背包 (22-57)
-            if (index < 22) {
-                if (!this.moveItemStackTo(slotStack, 22, 58, true)) {
+            // 升级槽 (0-5) 或存储仓 (6-13) -> 移动到玩家背包 (14-49)
+            if (index < 14) {
+                if (!this.moveItemStackTo(slotStack, 14, 50, true)) {
                     return ItemStack.EMPTY;
                 }
             }
@@ -194,9 +226,9 @@ public class GrapplingHookMenu extends AbstractContainerMenu {
                     }
                 }
 
-                // 若非升级模块或升级槽已满，放入 16 格存储仓
+                // 若非升级模块或升级槽已满，放入 8 格存储仓
                 if (!placedInUpgrade) {
-                    if (!this.moveItemStackTo(slotStack, 6, 22, false)) {
+                    if (!this.moveItemStackTo(slotStack, 6, 14, false)) {
                         return ItemStack.EMPTY;
                     }
                 }

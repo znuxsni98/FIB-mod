@@ -53,20 +53,18 @@ public class FIBMod {
         // 2. 注册通用初始化事件监听
         modEventBus.addListener(this::commonSetup);
 
-        // 3. 把各个模块的 DeferredRegister（延迟注册表）挂载到 MOD 总线上
-        // 告诉 Forge：“等开放注册时，把我这里的方块、物品一并登记入库！”
-        ModItems.register(modEventBus);               // 物品
+        ModItems.register(modEventBus);              // 物品
         ModBlocks.register(modEventBus);             // 方块
         ModCreativeModeTabs.register(modEventBus);   // 创造模式物品栏标签页
         ModSounds.register(modEventBus);             // 自定义音效
 
-        ModBlockEntities.register(modEventBus);      // 方块实体（机器大脑与存储）
-        ModVillager.register(modEventBus);           // 特殊村民职业与工作站
+        ModBlockEntities.register(modEventBus);      // 方块实体
+        ModVillager.register(modEventBus);           // 村民职业与工作站
         ModMenuTypes.register(modEventBus);          // 容器菜单网络同步
         ModEntities.register(modEventBus);           // 生物与投射物实体
         ModEffects.register(modEventBus);            // 状态药水效果
-        ModPotions.register(modEventBus);            // 药水配方
-        ModRecipes.register(modEventBus);            // 自定义合成与机器配方类型
+        ModPotions.register(modEventBus);            // 药水
+        ModRecipes.register(modEventBus);            // 自定义合成与配方类型
 
         // 4. 将本类注册到全局 FORGE 广播总线（用来接收诸如服务器开启等日常游戏事件）
         MinecraftForge.EVENT_BUS.register(this);

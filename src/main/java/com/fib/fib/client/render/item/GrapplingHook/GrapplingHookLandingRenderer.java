@@ -1,4 +1,4 @@
-package com.fib.fib.client.render;
+package com.fib.fib.client.render.item.GrapplingHook;
 
 import com.fib.fib.FIBMod;
 import com.fib.fib.init.entity.custom.GrapplingHookEntity;
@@ -12,7 +12,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
@@ -24,7 +23,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix4f;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -83,7 +81,7 @@ public class GrapplingHookLandingRenderer {
         float f2 = Mth.cos(yRot * ((float) Math.PI / 180F)) * Mth.cos(xRot * ((float) Math.PI / 180F));
         Vec3 velocity = new Vec3(f, f1, f2).normalize().scale(speed);
 
-        double maxDist = pressurized ? 24.0 : 16.0;
+        // 射程无距离限制（设计文档 §8），此处不做距离截断。
 
         // 弹道模拟
         Vec3 currentPos = startPos;
@@ -93,14 +91,10 @@ public class GrapplingHookLandingRenderer {
         BlockPos hitBlockPos = null;
         boolean canAnchor = true;
 
-        for (int step = 0; step < 40; step++) {
+        // 无射程上限：模拟步数提高，直到命中方块/实体为止
+        for (int step = 0; step < 600; step++) {
             currentVel = currentVel.subtract(0, 0.03, 0);
             Vec3 nextPos = currentPos.add(currentVel);
-
-            // 射程截断
-            if (startPos.distanceTo(nextPos) > maxDist) {
-                break;
-            }
 
             // 方块碰撞检测
             ClipContext clip = new ClipContext(
@@ -122,7 +116,6 @@ public class GrapplingHookLandingRenderer {
                     currentPos.distanceTo(entityHit.getLocation()) < currentPos.distanceTo(blockHit.getLocation()))) {
                 hitPoint = entityHit.getLocation();
                 hitFace = Direction.UP;
-                canAnchor = true;
                 break;
             } else if (blockHit.getType() != HitResult.Type.MISS) {
                 hitPoint = blockHit.getLocation();
@@ -146,7 +139,8 @@ public class GrapplingHookLandingRenderer {
         }
 
         // 若未命中任何目标，不渲染任何多余线条
-        if (hitPoint == null || hitFace == null) {
+        // （hitPoint 与 hitFace 总是成对赋值，判 hitPoint 即可）
+        if (hitPoint == null) {
             return;
         }
 
@@ -167,14 +161,14 @@ public class GrapplingHookLandingRenderer {
             r = 255; g = 60; b = 60;
         }
 
-        renderLandingMarker(consumer, pose, hitPoint, hitFace, canAnchor, r, g, b);
+        renderLandingMarker(consumer, pose, hitPoint, hitFace, r, g, b);
 
         poseStack.popPose();
     }
 
     /** 绘制附着在目标表面上的全息准星 */
     private static void renderLandingMarker(VertexConsumer consumer, Matrix4f pose, Vec3 hitPoint,
-                                            Direction face, boolean canAnchor, int r, int g, int b) {
+                                            Direction face, int r, int g, int b) {
         Vec3 normalVec = Vec3.atLowerCornerOf(face.getNormal());
         Vec3 center = hitPoint.add(normalVec.scale(0.015));
 

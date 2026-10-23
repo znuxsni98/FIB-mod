@@ -1,4 +1,4 @@
-package com.fib.fib.client.render;
+package com.fib.fib.client.render.item.GrapplingHook;
 
 import com.fib.fib.init.item.custom.GrapplingHookGunItem;
 import net.minecraft.client.Minecraft;
@@ -16,7 +16,7 @@ import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 
 /**
  * 钩爪枪专用 HUD 界面叠加层。
- * 实时显示准星射程测距指示、能量储备条、当前作业模式与 16 格存储仓容量。
+ * 实时显示准星射程测距指示、能量储备条、当前作业模式与 8 格存储仓容量。
  */
 public class GrapplingHookOverlay {
     public static final IGuiOverlay HUD = GrapplingHookOverlay::renderHUD;
@@ -35,40 +35,36 @@ public class GrapplingHookOverlay {
         }
 
         Font font = mc.font;
-        boolean pressurized = GrapplingHookGunItem.hasPressurizedModule(stack);
-        float maxRange = pressurized ? 24.0f : 16.0f;
-
-        // 1. 准星旁射程测距指示
-        Vec3 eyePos = player.getEyePosition(partialTick);
-        Vec3 lookVec = player.getViewVector(partialTick);
-        Vec3 reachVec = eyePos.add(lookVec.scale(maxRange + 10.0));
-        BlockHitResult hit = player.level().clip(new ClipContext(eyePos, reachVec, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
 
         int centerX = screenWidth / 2;
         int centerY = screenHeight / 2;
 
+        // 1. 准星旁测距指示：仅在安装「智能升级模块」时显示
+        if (GrapplingHookGunItem.hasSmartUpgradeModule(stack)) {
+        Vec3 eyePos = player.getEyePosition(partialTick);
+        Vec3 lookVec = player.getViewVector(partialTick);
+        Vec3 reachVec = eyePos.add(lookVec.scale(256.0));
+        BlockHitResult hit = player.level().clip(new ClipContext(eyePos, reachVec, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+
         if (hit.getType() == HitResult.Type.BLOCK) {
             double dist = eyePos.distanceTo(hit.getLocation());
-            if (dist <= maxRange) {
-                String distStr = String.format("%.1fm", dist);
-                guiGraphics.drawString(font, distStr, centerX + 10, centerY - 4, 0x55FF55, true);
-                // 绘制准星内锁点
-                guiGraphics.fill(centerX - 1, centerY - 1, centerX + 1, centerY + 1, 0xFF55FF55);
-            } else {
-                String distStr = String.format("%.1fm", dist);
-                guiGraphics.drawString(font, distStr, centerX + 10, centerY - 4, 0xAAAAAA, true);
-            }
+            String distStr = String.format("%.1fm", dist);
+            guiGraphics.drawString(font, distStr, centerX + 10, centerY - 4, 0x55FF55, true);
+            guiGraphics.fill(centerX - 1, centerY - 1, centerX + 1, centerY + 1, 0xFF55FF55);
+        }
         }
 
         // 2. 状态信息面板（右下角）
         float energy = GrapplingHookGunItem.getEnergy(stack);
+        // 背罐可换算能量（未穿戴时为 0）
+        float backtankEnergy = Math.max(0.0f, GrapplingHookGunItem.getAvailableEnergy(player, stack) - energy);
         GrapplingHookGunItem.Mode mode = GrapplingHookGunItem.getMode(stack);
-        boolean hasMining = GrapplingHookGunItem.hasMiningModule(stack);
+        boolean hasMining = GrapplingHookGunItem.isMiningModuleEffective(stack);
         GrapplingHookGunItem.MiningMode miningMode = GrapplingHookGunItem.getMiningMode(stack);
 
         int countStored = 0;
         var storage = GrapplingHookGunItem.getStorageHandler(stack);
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < GrapplingHookGunItem.STORAGE_SLOTS; i++) {
             if (!storage.getStackInSlot(i).isEmpty()) countStored++;
         }
 
@@ -79,24 +75,30 @@ public class GrapplingHookOverlay {
         guiGraphics.fill(panelX - 4, panelY - 4, panelX + 105, panelY + 58, 0x77000000);
         guiGraphics.renderOutline(panelX - 4, panelY - 4, 109, 62, 0xFF445566);
 
-        // 能量文本与进度条
-        guiGraphics.drawString(font, Component.translatable("fib_mod.hud.energy", String.format("%.1f", energy)), panelX, panelY, 0x00E5FF, true);
+        // 能量文本：有背罐时显示「枪内 + 背罐」（例 10.0 + 120.0），否则只显示枪内
+        Component energyText = (backtankEnergy > 0.01f)
+                ? Component.translatable("fib_mod.hud.energy",
+                        String.format("%.1f", energy),
+                        String.format("%.1f", backtankEnergy))
+                : Component.translatable("fib_mod.hud.energy_single",
+                        String.format("%.1f", energy));
+        guiGraphics.drawString(font, energyText, panelX, panelY, 0x00E5FF, true);
+        // 进度条按「枪内 + 背罐」总量填充（上限 20）
+        float totalEnergy = energy + backtankEnergy;
         int barWidth = 98;
-        int filledWidth = (int) (barWidth * (energy / GrapplingHookGunItem.MAX_ENERGY));
+        int filledWidth = (int) (barWidth * Math.min(1.0f, totalEnergy / GrapplingHookGunItem.MAX_ENERGY));
         guiGraphics.fill(panelX, panelY + 11, panelX + barWidth, panelY + 14, 0xFF222222);
         guiGraphics.fill(panelX, panelY + 11, panelX + filledWidth, panelY + 14, 0xFF00D0FF);
 
         // 工作模式
         guiGraphics.drawString(font, Component.translatable("fib_mod.hud.mode", Component.translatable(mode.getTranslationKey())), panelX, panelY + 18, 0xFFA000, true);
 
-        // 挖掘状态
+        // 挖掘状态（仅在安装挖掘模块时显示）
         if (hasMining) {
             guiGraphics.drawString(font, Component.translatable("fib_mod.hud.mining", Component.translatable(miningMode.getTranslationKey())), panelX, panelY + 29, 0xFFFF55, true);
-        } else {
-            guiGraphics.drawString(font, Component.translatable("fib_mod.hud.mining.none"), panelX, panelY + 29, 0x777777, true);
         }
 
         // 存储仓容量
-        guiGraphics.drawString(font, Component.translatable("fib_mod.hud.storage", countStored, 16), panelX, panelY + 40, 0xCCCCCC, true);
+        guiGraphics.drawString(font, Component.translatable("fib_mod.hud.storage", countStored, GrapplingHookGunItem.STORAGE_SLOTS), panelX, panelY + 40, 0xCCCCCC, true);
     }
 }

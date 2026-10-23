@@ -5,6 +5,8 @@ import com.fib.fib.client.render.block.RuMengDollBlockEntityRenderer;
 import com.fib.fib.client.render.entity.DimensionalCrackRenderer;
 import com.fib.fib.client.render.entity.HajjiAuthorRenderer;
 import com.fib.fib.client.render.entity.IceBallRenderer;
+import com.fib.fib.client.render.item.GrapplingHook.GrapplingHookEnergyBarDecorator;
+import com.fib.fib.client.render.item.GrapplingHook.GrapplingHookOverlay;
 import com.fib.fib.gui.container.screen.CrateScreen;
 import com.fib.fib.gui.container.screen.IceMakerScreen;
 import com.fib.fib.gui.container.screen.TrashCanScreen;
@@ -55,6 +57,7 @@ public class ClientSetup {
                 RuMengDollBlockEntityRenderer::new
         );
 
+
         // 2. 注册普通实体渲染器
         // 冰球投射物（ThrownItemRenderer 自动渲染物品贴图）
         event.registerEntityRenderer(
@@ -62,7 +65,8 @@ public class ClientSetup {
                 IceBallRenderer::new
         );
 
-        // 哈吉作者 Boss
+
+        // 哈吉作 Boss
         event.registerEntityRenderer(
                 ModEntities.HAJJI_AUTHOR.get(),
                 HajjiAuthorRenderer::new
@@ -87,7 +91,7 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onRegisterOverlays(net.minecraftforge.client.event.RegisterGuiOverlaysEvent event) {
         event.registerAbove(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.CROSSHAIR.id(),
-                "grappling_hook_hud", com.fib.fib.client.render.GrapplingHookOverlay.HUD);
+                "grappling_hook_hud", GrapplingHookOverlay.HUD);
     }
 
     /**
@@ -96,7 +100,7 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onRegisterItemDecorations(net.minecraftforge.client.event.RegisterItemDecorationsEvent event) {
         event.register(com.fib.fib.init.item.ModItems.GRAPPLING_HOOK_GUN.get(),
-                new com.fib.fib.client.render.GrapplingHookEnergyBarDecorator());
+                new GrapplingHookEnergyBarDecorator());
     }
 
     /**

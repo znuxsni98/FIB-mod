@@ -17,6 +17,7 @@ import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -46,6 +47,23 @@ public class KeyBindings {
             KEY_CATEGORY
     );
 
+    public static final KeyMapping KEY_OPEN_GUI = new KeyMapping(
+            "key.fib_mod.hook_open_gui",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_H,
+            KEY_CATEGORY
+    );
+
+    /** 取玩家主手/副手中的钩爪枪（主手优先）。 */
+    @Nullable
+    private static ItemStack getHeldGun(Player player) {
+        ItemStack main = player.getMainHandItem();
+        if (main.getItem() instanceof GrapplingHookGunItem) return main;
+        ItemStack off = player.getOffhandItem();
+        if (off.getItem() instanceof GrapplingHookGunItem) return off;
+        return null;
+    }
+
     @Mod.EventBusSubscriber(modid = FIBMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static class ModBusEvents {
         @SubscribeEvent
@@ -53,6 +71,7 @@ public class KeyBindings {
             event.register(KEY_MODE_SWITCH);
             event.register(KEY_MINING_TOGGLE);
             event.register(KEY_CLIMB);
+            event.register(KEY_OPEN_GUI);
         }
     }
 
@@ -66,10 +85,16 @@ public class KeyBindings {
             Player player = mc.player;
             if (player == null || mc.screen != null) return;
 
-            ItemStack stack = player.getMainHandItem();
-            if (!(stack.getItem() instanceof GrapplingHookGunItem)) return;
+            // 主手优先、副手兜底
+            ItemStack stack = getHeldGun(player);
+            if (stack == null) return;
 
-            // R 模式切换
+            // H 打开改装界面
+            while (KEY_OPEN_GUI.consumeClick()) {
+                ModMessages.sendToServer(new com.fib.fib.network.packet.HookOpenGuiPacket());
+            }
+
+            // R 模式切换（服务端按「主手优先、副手兜底」取枪）
             while (KEY_MODE_SWITCH.consumeClick()) {
                 ModMessages.sendToServer(new HookModeSwitchPacket());
             }
@@ -79,24 +104,24 @@ public class KeyBindings {
                 ModMessages.sendToServer(new HookMiningTogglePacket());
             }
 
-            // 空格键平台边缘借力高跳 (2-3格)
-            if (mc.options.keyJump.consumeClick() && mc.level != null) {
-                java.util.List<com.fib.fib.init.entity.custom.GrapplingHookEntity> hooks = mc.level.getEntitiesOfClass(
-                        com.fib.fib.init.entity.custom.GrapplingHookEntity.class,
-                        player.getBoundingBox().inflate(16.0),
-                        h -> h.getShooter() == player && (h.isHooked() && h.getHookState() != com.fib.fib.init.entity.custom.GrapplingHookEntity.State.MINING)
-                );
+            // 攀岩组合键：按住 Z 时持续收绳/放绳（左键放绳下降、右键收绳上升）
+            // 读取用 GLFW 物理状态（不受 KeyMapping 影响）；
+            // 同时清掉原版的 keyUse/keyAttack 状态，避免持续播放右键使用动画或挖方块。
+            if (KEY_CLIMB.isDown() && GrapplingHookGunItem.getMode(stack) == GrapplingHookGunItem.Mode.CLIMB) {
+                long window = mc.getWindow().getWindow();
+                boolean left = GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+                boolean right = GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
 
-                for (com.fib.fib.init.entity.custom.GrapplingHookEntity hook : hooks) {
-                    net.minecraft.world.phys.Vec3 anchor = hook.getAnchorPos();
-                    double dist = player.position().distanceTo(anchor);
-                    if (dist <= 4.5) {
-                        ModMessages.sendToServer(new com.fib.fib.network.packet.HookVaultPacket());
-                        net.minecraft.world.phys.Vec3 fwd = new net.minecraft.world.phys.Vec3(anchor.x - player.getX(), 0, anchor.z - player.getZ()).normalize().scale(0.38);
-                        player.setDeltaMovement(fwd.x, 0.65, fwd.z);
-                        player.resetFallDistance();
-                        break;
-                    }
+                // 清掉原版按键状态，阻断“持续使用物品/挖掘”动画
+                mc.options.keyUse.setDown(false);
+                mc.options.keyAttack.setDown(false);
+                if (mc.player != null && mc.player.isUsingItem()) {
+                    mc.player.stopUsingItem();
+                }
+
+                if (left != right) {
+                    ModMessages.sendToServer(new HookClimbPacket(
+                            left ? HookClimbPacket.ACTION_CLIMB_DOWN : HookClimbPacket.ACTION_CLIMB_UP));
                 }
             }
         }
@@ -107,30 +132,30 @@ public class KeyBindings {
             Player player = mc.player;
             if (player == null || mc.screen != null) return;
 
-            ItemStack stack = player.getMainHandItem();
-            if (!(stack.getItem() instanceof GrapplingHookGunItem)) return;
+            ItemStack stack = getHeldGun(player);
+            if (stack == null) return;
 
             GrapplingHookGunItem.Mode mode = GrapplingHookGunItem.getMode(stack);
-            if (mode != GrapplingHookGunItem.Mode.CLIMB) return;
 
-            // 中键自动上升
-            if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE && event.getAction() == GLFW.GLFW_PRESS) {
-                ModMessages.sendToServer(new HookClimbPacket(HookClimbPacket.ACTION_AUTO_ASCEND_TOGGLE));
-                event.setCanceled(true);
-                return;
+            // 攀岩操作中：左/右键被征用为收放绳，阻止其破坏/放置方块
+            if (mode == GrapplingHookGunItem.Mode.CLIMB && KEY_CLIMB.isDown()) {
+                int button = event.getButton();
+                if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+                    event.setCanceled(true);
+                    return;
+                }
             }
 
-            // 按住 Z 时的攀岩放绳/收绳
-            if (KEY_CLIMB.isDown() && event.getAction() == GLFW.GLFW_PRESS) {
-                if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                    // Z + 左键收绳上升
-                    ModMessages.sendToServer(new HookClimbPacket(HookClimbPacket.ACTION_CLIMB_UP));
-                    event.setCanceled(true);
-                } else if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-                    // Z + 右键放绳下降
-                    ModMessages.sendToServer(new HookClimbPacket(HookClimbPacket.ACTION_CLIMB_DOWN));
-                    event.setCanceled(true);
+            // 中键：所有模式均为「先回收再发射」；
+            // 攀岩模式下按住 Z + 中键 = 自动上升（自动拉取）。
+            if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE && event.getAction() == GLFW.GLFW_PRESS) {
+                if (mode == GrapplingHookGunItem.Mode.CLIMB && KEY_CLIMB.isDown()) {
+                    ModMessages.sendToServer(new HookClimbPacket(HookClimbPacket.ACTION_AUTO_ASCEND_TOGGLE));
+                } else {
+                    ModMessages.sendToServer(new com.fib.fib.network.packet.HookQuickShootPacket());
                 }
+                event.setCanceled(true);
+                return;
             }
         }
     }
