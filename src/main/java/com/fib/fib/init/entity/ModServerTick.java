@@ -1,7 +1,7 @@
 package com.fib.fib.init.entity;
 
 import com.fib.fib.FIBMod;
-import com.fib.fib.init.entity.custom.GrapplingHookEntity;
+import com.fib.fib.init.entity.custom.QuickShootQueue;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -15,12 +15,12 @@ public class ModServerTick {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        GrapplingHookEntity.processPendingQuickShoot();
+        QuickShootQueue.tick();
     }
 
     /** 服务器关闭：清空待发射队列，避免静态 Map 跨存档持有旧 ServerPlayer。 */
     @SubscribeEvent
     public static void onServerStopped(net.minecraftforge.event.server.ServerStoppedEvent event) {
-        GrapplingHookEntity.clearPendingQuickShoot();
+        QuickShootQueue.clear();
     }
 }

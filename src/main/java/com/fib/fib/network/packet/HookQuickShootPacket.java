@@ -45,7 +45,7 @@ public class HookQuickShootPacket {
                 hook.setRetracting();
                 hook.clearPartnerHook();
             }
-            com.fib.fib.init.entity.custom.GrapplingHookEntity.scheduleQuickShoot(player);
+            com.fib.fib.init.entity.custom.QuickShootQueue.schedule(player);
         });
         return true;
     }
