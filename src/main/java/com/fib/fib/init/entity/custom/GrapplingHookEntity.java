@@ -1641,6 +1641,32 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     /** 是否已落地（落地后永久静止，不消失）。 */
     private boolean dropLanded = false;
 
+    /**
+     * 落地后尝试把脚下方块设为新挖掘目标（钻头向下连挖）。
+     * @return true 表示已切换到 MINING 状态
+     */
+    private boolean tryMineBlockBelow(BlockPos below, BlockState belowState) {
+        Player shooter = getShooter();
+        ItemStack held = shooter != null ? getHeldGun(shooter) : null;
+        if (shooter == null || held == null
+                || !GrapplingHookGunItem.isMiningModuleEffective(held)
+                || GrapplingHookGunItem.getMiningMode(held) == GrapplingHookGunItem.MiningMode.OFF) {
+            return false;
+        }
+        float hardness = belowState.getDestroySpeed(level(), below);
+        if (hardness < 0.0f) {
+            return false;
+        }
+        this.miningBlockPos = below;
+        this.miningTicks = 0;
+        this.maxMiningTicks = Math.max(10, (int) (hardness * 12));
+        this.hookedBlockPos = below;
+        setTargetType(TargetType.BLOCK);
+        setAnchorPos(new Vec3(below.getX() + 0.5, below.getY() + 1.0, below.getZ() + 0.5));
+        setHookState(State.MINING);
+        return true;
+    }
+
     /** 自由下落：受重力下落，落地后静止保留（不消失，可右键回收）。 */
     private void tickDropping() {
         // 已落地：检查脚下方块是否还在，被破坏则重新下落。
@@ -1651,23 +1677,9 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             if (belowState.isAir() || belowState.getCollisionShape(level(), below).isEmpty()) {
                 dropLanded = false;   // 悬空 -> 继续下落
             } else {
-                // 落地后若装有挖掘模块且模式开启：继续挖掘脚下这块方块（钻头向下连挖）
-                Player shooter = getShooter();
-                ItemStack held = shooter != null ? getHeldGun(shooter) : null;
-                if (shooter != null && held != null
-                        && GrapplingHookGunItem.isMiningModuleEffective(held)
-                        && GrapplingHookGunItem.getMiningMode(held) != GrapplingHookGunItem.MiningMode.OFF) {
-                    float hd = belowState.getDestroySpeed(level(), below);
-                    if (hd >= 0.0f) {
-                        this.miningBlockPos = below;
-                        this.miningTicks = 0;
-                        this.maxMiningTicks = Math.max(10, (int) (hd * 12));
-                        this.hookedBlockPos = below;
-                        setTargetType(TargetType.BLOCK);
-                        setAnchorPos(new Vec3(below.getX() + 0.5, below.getY() + 1.0, below.getZ() + 0.5));
-                        setHookState(State.MINING);
-                        return;
-                    }
+                // 落地后若装有挖掘模块且模式开启：继续挖脚下方块（钻头向下连挖）
+                if (tryMineBlockBelow(below, belowState)) {
+                    return;
                 }
                 setDeltaMovement(Vec3.ZERO);
                 return;
