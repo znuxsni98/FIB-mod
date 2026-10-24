@@ -1485,28 +1485,9 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             return;
         }
 
-        // ④ 先判定当前是否「值得挖掘」（无掉落物且为“破坏有掉落物的”模式时不耗能）
-        if (getTargetType() == TargetType.BLOCK) {
-            BlockState pre = level().getBlockState(miningBlockPos);
-            if (pre.isAir()) {
-                // 方块已被破坏 -> 钩爪脱落自由下落（与 HOOKED/CLIMBING 一致）
-                startDropping();
-                return;
-            }
-            ItemStack heldPre = getHeldGun(shooter);
-            if (heldPre == null) {
-                setRetracting();
-                return;
-            }
-            GrapplingHookGunItem.MiningMode preMode = GrapplingHookGunItem.getMiningMode(heldPre);
-            if (preMode == GrapplingHookGunItem.MiningMode.MINE_ALL) {
-                List<ItemStack> preDrops = Block.getDrops(pre, (ServerLevel) level(), miningBlockPos, null, shooter, heldPre);
-                if (preDrops.isEmpty()) {
-                    // 无掉落物：不破坏、不耗能、无音效，原地等待
-                    miningTicks = 0;
-                    return;
-                }
-            }
+        // 预判定：方块被破坏 / 无掉落物时提前退出（不耗能）
+        if (!preCheckMiningWorthwhile(shooter)) {
+            return;
         }
 
         // 钻头工作时持续耗能：0.1 能量/秒（= 0.005/tick，加压模块 ×2）
@@ -1517,86 +1498,126 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             return;
         }
 
-        // A. 挖掘方块
         if (getTargetType() == TargetType.BLOCK) {
-            BlockState state = level().getBlockState(miningBlockPos);
-            if (state.isAir()) {
-                startDropping();
-                return;
-            }
+            mineBlockTarget(shooter);
+        } else if (getTargetType() == TargetType.LIVING && hookedEntity instanceof LivingEntity living) {
+            damageLivingTarget(shooter, living);
+        } else {
+            setRetracting();
+        }
+    }
 
-            miningTicks++;
-
-            // 先取掉落物（用于模式判定）
-            ItemStack heldNow = getHeldGun(shooter);
-            if (heldNow == null) {
-                setRetracting();
-                return;
-            }
-            List<ItemStack> dropsNow = Block.getDrops(state, (ServerLevel) level(), miningBlockPos, null, shooter, heldNow);
-            GrapplingHookGunItem.MiningMode mModeNow = GrapplingHookGunItem.getMiningMode(heldNow);
-
-            // 「破坏 + 可掉落」模式：只挖有掉落物的方块。
-            // 无掉落物 -> 不破坏、无音效、不回收，原地待命。
-            if (mModeNow == GrapplingHookGunItem.MiningMode.MINE_ALL && dropsNow.isEmpty()) {
+    /**
+     * 挖掘前置判定（不耗能）：
+     *  - 方块已消失 -> 脱落
+     *  - 枪丢失 -> 收回
+     *  - MINE_ALL 模式且方块无掉落物 -> 原地待命（不破坏、不耗能、无音效）
+     * @return true 表示可以继续挖掘
+     */
+    private boolean preCheckMiningWorthwhile(Player shooter) {
+        if (getTargetType() != TargetType.BLOCK) {
+            return true;
+        }
+        BlockState pre = level().getBlockState(miningBlockPos);
+        if (pre.isAir()) {
+            // 方块已被破坏 -> 钩爪脱落自由下落（与 HOOKED/CLIMBING 一致）
+            startDropping();
+            return false;
+        }
+        ItemStack heldPre = getHeldGun(shooter);
+        if (heldPre == null) {
+            setRetracting();
+            return false;
+        }
+        if (GrapplingHookGunItem.getMiningMode(heldPre) == GrapplingHookGunItem.MiningMode.MINE_ALL) {
+            List<ItemStack> preDrops = Block.getDrops(pre, (ServerLevel) level(), miningBlockPos, null, shooter, heldPre);
+            if (preDrops.isEmpty()) {
+                // 无掉落物：不破坏、不耗能、无音效，原地等待
                 miningTicks = 0;
-                return;
+                return false;
             }
+        }
+        return true;
+    }
 
-            // 钻头运转音效与粒子
-            if (miningTicks % 4 == 0) {
-                level().playSound(null, miningBlockPos.getX(), miningBlockPos.getY(), miningBlockPos.getZ(),
-                        ModSounds.HOOK_DRILL.get(), SoundSource.BLOCKS, 0.7f, 1.2f);
-                if (level() instanceof ServerLevel serverLevel) {
-                    serverLevel.sendParticles(
-                            new BlockParticleOption(ParticleTypes.BLOCK, state),
-                            miningBlockPos.getX() + 0.5, miningBlockPos.getY() + 0.5, miningBlockPos.getZ() + 0.5,
-                            6, 0.2, 0.2, 0.2, 0.05
-                    );
-                }
-            }
+    /** 挖掘方块目标：计时、音效粒子、完成时存仓并脱落下落。 */
+    private void mineBlockTarget(Player shooter) {
+        BlockState state = level().getBlockState(miningBlockPos);
+        if (state.isAir()) {
+            startDropping();
+            return;
+        }
 
-            if (miningTicks >= maxMiningTicks) {
-                // 挖掘完成
-                if (level() instanceof ServerLevel serverLevel) {
-                    ItemStack held = getHeldGun(shooter);
-                    if (held == null) {
-                        setRetracting();
-                        return;
-                    }
-                    List<ItemStack> drops = Block.getDrops(state, serverLevel, miningBlockPos, null, shooter, held);
-                    serverLevel.destroyBlock(miningBlockPos, false);
+        miningTicks++;
 
-                    // 将掉落物存入钩爪存储仓（8 格）
-                    ItemStackHandler storage = GrapplingHookGunItem.getStorageHandler(held);
-                    for (ItemStack drop : drops) {
-                        ItemStack remainder = ItemHandlerHelper.insertItem(storage, drop, false);
-                        if (!remainder.isEmpty()) {
-                            // 溢出掉落物散落于世界中
-                            Block.popResource(serverLevel, miningBlockPos, remainder);
-                        }
-                    }
-                    GrapplingHookGunItem.saveStorageHandler(held, storage);
-                }
-                startDropping();
+        ItemStack heldNow = getHeldGun(shooter);
+        if (heldNow == null) {
+            setRetracting();
+            return;
+        }
+        List<ItemStack> dropsNow = Block.getDrops(state, (ServerLevel) level(), miningBlockPos, null, shooter, heldNow);
+
+        // 「破坏 + 可掉落」模式：只挖有掉落物的方块。
+        // 无掉落物 -> 不破坏、无音效、不回收，原地待命。
+        if (GrapplingHookGunItem.getMiningMode(heldNow) == GrapplingHookGunItem.MiningMode.MINE_ALL
+                && dropsNow.isEmpty()) {
+            miningTicks = 0;
+            return;
+        }
+
+        // 钻头运转音效与粒子
+        if (miningTicks % 4 == 0) {
+            level().playSound(null, miningBlockPos.getX(), miningBlockPos.getY(), miningBlockPos.getZ(),
+                    ModSounds.HOOK_DRILL.get(), SoundSource.BLOCKS, 0.7f, 1.2f);
+            if (level() instanceof ServerLevel serverLevel) {
+                serverLevel.sendParticles(
+                        new BlockParticleOption(ParticleTypes.BLOCK, state),
+                        miningBlockPos.getX() + 0.5, miningBlockPos.getY() + 0.5, miningBlockPos.getZ() + 0.5,
+                        6, 0.2, 0.2, 0.2, 0.05
+                );
             }
         }
 
-        // B. 钻头持续磨血
-        else if (getTargetType() == TargetType.LIVING && hookedEntity instanceof LivingEntity living) {
-            if (!living.isAlive() || living.isRemoved()) {
-                setRetracting();
-                return;
-            }
+        if (miningTicks >= maxMiningTicks) {
+            finishMiningBlock(shooter, state);
+            startDropping();
+        }
+    }
 
-            continuousDamageTimer++;
-            if (continuousDamageTimer % 10 == 0) {
-                living.hurt(level().damageSources().playerAttack(shooter), 2.0f);
-                level().playSound(null, living.getX(), living.getY(), living.getZ(),
-                        ModSounds.HOOK_DRILL.get(), SoundSource.PLAYERS, 0.6f, 1.4f);
-            }
-        } else {
+    /** 挖掘完成：破坏方块并把掉落物存入存储仓（溢出掉落到世界）。 */
+    private void finishMiningBlock(Player shooter, BlockState state) {
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        ItemStack held = getHeldGun(shooter);
+        if (held == null) {
             setRetracting();
+            return;
+        }
+        List<ItemStack> drops = Block.getDrops(state, serverLevel, miningBlockPos, null, shooter, held);
+        serverLevel.destroyBlock(miningBlockPos, false);
+
+        ItemStackHandler storage = GrapplingHookGunItem.getStorageHandler(held);
+        for (ItemStack drop : drops) {
+            ItemStack remainder = ItemHandlerHelper.insertItem(storage, drop, false);
+            if (!remainder.isEmpty()) {
+                Block.popResource(serverLevel, miningBlockPos, remainder);
+            }
+        }
+        GrapplingHookGunItem.saveStorageHandler(held, storage);
+    }
+
+    /** 钻头磨血：每 10 tick 造成 2.0 伤害 + 音效。 */
+    private void damageLivingTarget(Player shooter, LivingEntity living) {
+        if (!living.isAlive() || living.isRemoved()) {
+            setRetracting();
+            return;
+        }
+        continuousDamageTimer++;
+        if (continuousDamageTimer % 10 == 0) {
+            living.hurt(level().damageSources().playerAttack(shooter), 2.0f);
+            level().playSound(null, living.getX(), living.getY(), living.getZ(),
+                    ModSounds.HOOK_DRILL.get(), SoundSource.PLAYERS, 0.6f, 1.4f);
         }
     }
 
