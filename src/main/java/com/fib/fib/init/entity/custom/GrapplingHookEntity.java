@@ -636,41 +636,56 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             setDeltaMovement(motion.subtract(0, 0.03, 0));
         }
 
-        Vec3 nextPos = pos.add(getDeltaMovement());
-        HitResult hitResult = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
-
-        // 拾取模式下，飞行中对附近的掉落物执行微引力磁吸锁定检测
-        if (GrapplingHookGunItem.getMode(gunStack) == GrapplingHookGunItem.Mode.PICKUP
-                && !GrapplingHookGunItem.hasDualHookModule(gunStack)) {
-            AABB magnetBox = getBoundingBox().inflate(1.8);
-            List<ItemEntity> nearbyItems = level().getEntitiesOfClass(ItemEntity.class, magnetBox, Entity::isAlive);
-            if (!nearbyItems.isEmpty()) {
-                ItemEntity nearest = nearbyItems.get(0);
-                onHitEntity(new EntityHitResult(nearest));
-                return;
-            }
+        // 拾取模式磁吸：命中判定之前先尝试锁定附近掉落物
+        if (tryMagnetPickup()) {
+            return;
         }
 
+        HitResult hitResult = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
         if (hitResult.getType() != HitResult.Type.MISS) {
             onHit(hitResult);
             // 命中后立即停止位移，避免残余速度把钩爪“弹飞”
             setDeltaMovement(Vec3.ZERO);
         } else {
-            Vec3 move = getDeltaMovement();
-            move(MoverType.SELF, move);
-            // move 过程中发生碰撞（射线擦边未命中）时，锚定到相邻真实方块。
-            // 注意：锚点必须用钩爪当前坐标，不能瞬移到方块中心（那会穿进方块内部）。
-            if (this.horizontalCollision || this.verticalCollision) {
-                BlockPos anchor = HookGeometry.findSolidBlockNearby(level(), position());
-                if (anchor != null) {
-                    Vec3 loc = position();
-                    onHit(new BlockHitResult(loc, Direction.UP, anchor, false));
-                } else {
-                    setRetracting();
-                }
-                setDeltaMovement(Vec3.ZERO);
-            }
+            move(MoverType.SELF, getDeltaMovement());
+            handleFlyingCollision();
         }
+    }
+
+    /**
+     * 拾取模式磁吸：飞行中对 1.8 格内的掉落物直接建立连接。
+     * @return true 表示已锁定目标（调用方应停止本 tick 后续流程）
+     */
+    private boolean tryMagnetPickup() {
+        if (GrapplingHookGunItem.getMode(gunStack) != GrapplingHookGunItem.Mode.PICKUP
+                || GrapplingHookGunItem.hasDualHookModule(gunStack)) {
+            return false;
+        }
+        AABB magnetBox = getBoundingBox().inflate(1.8);
+        List<ItemEntity> nearbyItems = level().getEntitiesOfClass(ItemEntity.class, magnetBox, Entity::isAlive);
+        if (nearbyItems.isEmpty()) {
+            return false;
+        }
+        onHitEntity(new EntityHitResult(nearbyItems.get(0)));
+        return true;
+    }
+
+    /**
+     * 飞行中发生方块碰撞（射线擦边未命中）时的兜底锚定。
+     * 锚点必须用钩爪当前坐标，不能瞬移到方块中心（那会穿进方块内部）。
+     */
+    private void handleFlyingCollision() {
+        if (!this.horizontalCollision && !this.verticalCollision) {
+            return;
+        }
+        BlockPos anchor = HookGeometry.findSolidBlockNearby(level(), position());
+        if (anchor != null) {
+            Vec3 loc = position();
+            onHit(new BlockHitResult(loc, Direction.UP, anchor, false));
+        } else {
+            setRetracting();
+        }
+        setDeltaMovement(Vec3.ZERO);
     }
 
     /**
