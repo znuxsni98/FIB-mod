@@ -24,6 +24,10 @@ run
 # Files from Forge MDK
 forge*changelog.txt
 
+# datagen 缓存（含本机绝对路径，不应入库）
+src/generated/resources/.cache/
+run-data/
+
 # Internal mentoring docs and editor configs (sent separately)
 docs/
 .cursorrules
