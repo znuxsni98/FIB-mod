@@ -712,7 +712,7 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         super.onHitBlock(hitResult);
         if (level().isClientSide) return;
 
-        // 抓取模块稳固模式判定：自身不动，遇不可拉取方块碰撞即收回
+        // 抓取模块稳固模式：自身不动，遇方块碰撞即收回
         if (GrapplingHookGunItem.isGrappleModuleEffective(gunStack)
                 && GrapplingHookGunItem.getGrappleMode(gunStack) == GrapplingHookGunItem.GrappleMode.STABLE) {
             level().playSound(null, getX(), getY(), getZ(), SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 0.8f, 1.2f);
@@ -733,25 +733,10 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                 state = level().getBlockState(pos);
             }
         }
-        if (state.isAir()) {
-            // 无法确定锚定方块 -> 收回
-            setRetracting();
-            return;
-        }
-        IHookMaterial material = GrapplingHookGunItem.getHookMaterial(gunStack);
 
-        // 羊毛钩爪无法钩方块
-        if (!material.canHookBlocks()) {
-            level().playSound(null, getX(), getY(), getZ(), SoundEvents.WOOL_FALL, SoundSource.PLAYERS, 0.8f, 1.0f);
-            setRetracting();
-            return;
-        }
-
-        // 高硬度方块（黑曜石等）判定
+        // 方块有效性校验（空气 / 羊毛钩爪 / 高硬度）：不通过即收回
         float hardness = state.getDestroySpeed(level(), pos);
-        if (hardness > 25.0f && !material.canHookHardBlocks()) {
-            level().playSound(null, getX(), getY(), getZ(), SoundEvents.ANVIL_HIT, SoundSource.PLAYERS, 0.8f, 1.8f);
-            setRetracting();
+        if (!validateHookedBlock(state, hardness)) {
             return;
         }
 
@@ -770,6 +755,47 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
 
         level().playSound(null, hitPos.x, hitPos.y, hitPos.z, ModSounds.HOOK_HIT_BLOCK.get(), SoundSource.PLAYERS, 0.9f, 1.0f);
 
+        // 锚定状态选择（挖掘 / 快速 / 双钩 / 攀岩 / 普通）
+        applyHookedStateAfterHit(hardness, pos);
+    }
+
+    /**
+     * 校验命中的方块是否可作为锚点。不通过时直接收回。
+     * @return true 表示有效
+     */
+    private boolean validateHookedBlock(BlockState state, float hardness) {
+        if (state.isAir()) {
+            // 无法确定锚定方块 -> 收回
+            setRetracting();
+            return false;
+        }
+        IHookMaterial material = GrapplingHookGunItem.getHookMaterial(gunStack);
+
+        // 羊毛钩爪无法钩方块
+        if (!material.canHookBlocks()) {
+            level().playSound(null, getX(), getY(), getZ(), SoundEvents.WOOL_FALL, SoundSource.PLAYERS, 0.8f, 1.0f);
+            setRetracting();
+            return false;
+        }
+
+        // 高硬度方块（黑曜石等）判定
+        if (hardness > 25.0f && !material.canHookHardBlocks()) {
+            level().playSound(null, getX(), getY(), getZ(), SoundEvents.ANVIL_HIT, SoundSource.PLAYERS, 0.8f, 1.8f);
+            setRetracting();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 命中方块后的状态选择：
+     * - 挖掘模块开启 -> MINING
+     * - 快速模式 -> PULLING（第 2 枚命中则升级为第 1 枚并回收旧第 1 枚）
+     * - 双钩 -> HOOKED（仅受拴绳约束）
+     * - 攀岩 -> CLIMBING
+     * - 其余 -> HOOKED
+     */
+    private void applyHookedStateAfterHit(float hardness, BlockPos pos) {
         // 挖掘模式检测：若装备挖掘模块且处于开启状态（双钩模块激活时挖掘不生效）
         if (GrapplingHookGunItem.isMiningModuleEffective(gunStack)) {
             GrapplingHookGunItem.MiningMode mMode = GrapplingHookGunItem.getMiningMode(gunStack);
@@ -782,11 +808,6 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             }
         }
 
-        // 锚定状态选择：
-        // - 快速模式：直接进入 PULLING（拉向目标）
-        // - 双钩模式：进入 HOOKED，只受两钩间拴绳约束
-        // - 攀岩模式：进入 CLIMBING
-        // - 其余：HOOKED
         GrapplingHookGunItem.Mode mode = GrapplingHookGunItem.getMode(gunStack);
         if (quickMode) {
             setHookState(State.PULLING);
