@@ -842,6 +842,15 @@ public class GrapplingHookGunItem extends Item {
                 }
             }
 
+            // 丢失保护：loaded == 1 说明已发出第 1 枚，但场上已无未配对钩爪，
+            // 说明它已掉落（DROPPING）或正在收回（RETRACTING）。此时若照常发第 2 枚，
+            // 会因无 anchor 而无法配对，随后 clearHookSlot 清空槽位 —— 一对双钩物品彻底损失。
+            // 正确做法：重置为全新一对，重新发第 1 枚。
+            if (loaded == 1 && anchorHook == null && hasDualHookItem(stack)) {
+                setLoadedHooks(stack, MAX_DUAL_HOOKS);
+                loaded = MAX_DUAL_HOOKS;
+            }
+
             if (!shootHook(level, player, stack, hand, anchorHook)) {
                 return InteractionResultHolder.fail(stack);
             }
