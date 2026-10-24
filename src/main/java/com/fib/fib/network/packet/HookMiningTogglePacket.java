@@ -35,6 +35,10 @@ public class HookMiningTogglePacket {
                     }
                     // 未安装相关模块时不提示。
 
+                    // 回传模式，让客户端 KeyBindings / HUD 立即读到新值
+                    com.fib.fib.network.ModMessages.sendToPlayer(
+                            new com.fib.fib.network.packet.SyncGunModePacket(held), player);
+
                     // 立即把新模式同步到已发射的钩爪，使钻头模式即时切换
                     for (com.fib.fib.init.entity.custom.GrapplingHookEntity hook
                             : player.level().getEntitiesOfClass(

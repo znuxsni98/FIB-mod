@@ -234,10 +234,22 @@ public class GrapplingHookGunItem extends Item {
     }
 
     public static ItemStackHandler getUpgradesHandler(ItemStack stack) {
-        ItemStackHandler handler = new ItemStackHandler(6);
+        // 钩爪槽（槽位 0）只允许 1 个物品，防止可堆叠钩爪（如双钩 stacksTo 16）被塞入多个
+        ItemStackHandler handler = new ItemStackHandler(6) {
+            @Override
+            public int getSlotLimit(int slot) {
+                return slot == 0 ? 1 : super.getSlotLimit(slot);
+            }
+        };
         CompoundTag tag = stack.getTag();
         if (tag != null && tag.contains(TAG_UPGRADES)) {
             handler.deserializeNBT(tag.getCompound(TAG_UPGRADES));
+            // 反序列化绕过 getSlotLimit，旧存档可能存了多个：强制截断为 1
+            ItemStack slot0 = handler.getStackInSlot(0);
+            if (slot0.getCount() > 1) {
+                slot0.setCount(1);
+                handler.setStackInSlot(0, slot0);
+            }
         }
         return handler;
     }
@@ -290,6 +302,85 @@ public class GrapplingHookGunItem extends Item {
 
     public static void saveStorageHandler(ItemStack stack, ItemStackHandler handler) {
         stack.getOrCreateTag().put(TAG_STORAGE, handler.serializeNBT());
+    }
+
+    /**
+     * 回收一对双钩后返还 1 个「双钩钩爪」物品：
+     *  1. 优先放入钩爪枪存储仓（有空位或同类未满即堆叠）；
+     *  2. 存储仓放不下的部分掉落为世界物品。
+     */
+    public static void refundDualHook(Level level, Player player, ItemStack gun, int pairs) {
+        if (level.isClientSide) return;
+        if (!hasDualHookModule(gun)) return;
+        refundDualHookRaw(level, player, gun, pairs);
+    }
+
+    /**
+     * 实际返还逻辑，不检查双钩模块（供「卸下模块」路径调用）。
+     *
+     * 优先级：
+     *  1. 钩爪枪存储仓：未满同类 -> 空位
+     *  2. 玩家背包：未满同类 -> 空位（Inventory.add 自然按此顺序）
+     *  3. 背包也满：生成掉落物
+     */
+    public static void refundDualHookRaw(Level level, Player player, ItemStack gun, int pairs) {
+        if (level.isClientSide) return;
+        if (pairs <= 0) return;
+
+        ItemStackHandler storage = getStorageHandler(gun);
+        for (int i = 0; i < pairs; i++) {
+            ItemStack refund = new ItemStack(com.fib.fib.init.item.ModItems.DUAL_HOOK.get());
+
+            // 1. 枪存储仓：先合并到同类未满槽，再放空槽
+            refund = insertPrioritized(storage, refund);
+
+            // 2. 背包（含快捷栏/副手）：Inventory.add 天然"先并同类、再找空位"
+            if (!refund.isEmpty()) {
+                if (player.getInventory().add(refund)) {
+                    refund = ItemStack.EMPTY;
+                }
+            }
+
+            // 3. 全满：与玩家主动扔出的掉落物完全一致
+            if (!refund.isEmpty()) {
+                player.drop(refund, false);
+            }
+        }
+        saveStorageHandler(gun, storage);
+    }
+
+    /**
+     * 向 ItemStackHandler 插入物品，严格按「先合并同类未满槽 -> 再放入空槽」的顺序。
+     * 与 ItemHandlerHelper.insertItem 不同：后者按槽位顺序，空槽可能排在同类槽之前。
+     */
+    private static ItemStack insertPrioritized(ItemStackHandler handler, ItemStack stack) {
+        ItemStack remaining = stack.copy();
+        int limit = Math.min(remaining.getMaxStackSize(), handler.getSlotLimit(0));
+
+        // 第一遍：合并到同类未满槽
+        for (int i = 0; i < handler.getSlots() && !remaining.isEmpty(); i++) {
+            ItemStack in = handler.getStackInSlot(i);
+            if (in.isEmpty() || !ItemStack.isSameItemSameTags(in, remaining)) continue;
+            int slotLimit = Math.min(remaining.getMaxStackSize(), handler.getSlotLimit(i));
+            int space = slotLimit - in.getCount();
+            if (space <= 0) continue;
+            int move = Math.min(space, remaining.getCount());
+            in.grow(move);
+            remaining.shrink(move);
+            handler.setStackInSlot(i, in);
+        }
+
+        // 第二遍：放入空槽
+        for (int i = 0; i < handler.getSlots() && !remaining.isEmpty(); i++) {
+            if (!handler.getStackInSlot(i).isEmpty()) continue;
+            int slotLimit = Math.min(remaining.getMaxStackSize(), handler.getSlotLimit(i));
+            int move = Math.min(slotLimit, remaining.getCount());
+            ItemStack placed = remaining.copy();
+            placed.setCount(move);
+            handler.setStackInSlot(i, placed);
+            remaining.shrink(move);
+        }
+        return remaining;
     }
 
     // ==================== 升级槽位检测工具 ====================
@@ -474,6 +565,18 @@ public class GrapplingHookGunItem extends Item {
         if (hasDualHookModule(stack)) {
             Mode cur = getMode(stack);
             Mode nxt = (cur == Mode.QUICK) ? Mode.DUAL : Mode.QUICK;
+            // QUICK -> DUAL：回收所有快速钩爪（快速钩爪不应参与双钩配对）。
+            // DUAL  -> QUICK：不回收已成对的双钩（它们是"已部署装备"，切回 DUAL 才能管理）。
+            if (cur == Mode.QUICK && nxt == Mode.DUAL) {
+                List<GrapplingHookEntity> quickHooks = player.level().getEntitiesOfClass(
+                        GrapplingHookEntity.class,
+                        player.getBoundingBox().inflate(256.0),
+                        h -> h.getShooter() == player && !h.isRemoved() && h.isQuickMode());
+                for (GrapplingHookEntity h : quickHooks) {
+                    h.setRetracting();
+                    h.clearPartnerHook();
+                }
+            }
             setMode(stack, nxt);
             player.displayClientMessage(
                     Component.translatable("fib_mod.hook.mode_switched",
@@ -545,13 +648,22 @@ public class GrapplingHookGunItem extends Item {
     private InteractionResultHolder<ItemStack> handleSneakRightClick(Level level, Player player,
                                                                      ItemStack stack,
                                                                      List<GrapplingHookEntity> activeHooks) {
-        // 1. 快速模式：回收全部快速钩爪
+        // 1. 快速模式：回收全部快速钩爪 + 清理已落地的钩爪
         if (getMode(stack) == Mode.QUICK) {
             if (!level.isClientSide) {
                 for (GrapplingHookEntity h : activeHooks) {
                     if (h.isQuickMode()) {
                         h.setRetracting();
                     }
+                }
+                // 已落地（DROPPING）的钩爪不会出现在 activeHooks 中，需单独清理，
+                // 否则快速模式下的落地钩爪永远无法清除。
+                for (GrapplingHookEntity d : level.getEntitiesOfClass(
+                        GrapplingHookEntity.class,
+                        player.getBoundingBox().inflate(16.0),
+                        h -> h.getShooter() == player && !h.isRemoved()
+                                && h.getHookState() == GrapplingHookEntity.State.DROPPING)) {
+                    d.discard();
                 }
             }
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
@@ -598,13 +710,20 @@ public class GrapplingHookGunItem extends Item {
         GrapplingHookEntity targetedHook = findAimedHook(player, activeHooks);
         if (targetedHook != null) {
             if (!level.isClientSide) {
+                // 双钩成对回收：连同 partner 一起回收，只回收一对
+                GrapplingHookEntity partner = targetedHook.getPartnerHook();
                 targetedHook.setRetracting();
-                targetedHook.clearPartnerHook();
-                for (GrapplingHookEntity hook : activeHooks) {
-                    if (hook != targetedHook) {
-                        hook.clearPartnerHook();
-                    }
+                boolean wasPair = partner != null && !partner.isRemoved();
+                if (wasPair) {
+                    partner.setRetracting();
                 }
+                targetedHook.clearPartnerHook();
+                // 只有成对回收才返还；单枚未配对的钩爪不返还
+                if (wasPair) {
+                    refundDualHook(level, player, stack, 1);
+                }
+                // 回收后立即尝试补充，避免槽位空置
+                tryAutoRefillDualHook(stack);
             }
             player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                     ModSounds.HOOK_RETRACT.get(), SoundSource.PLAYERS, 0.8f, 1.2f);
@@ -616,10 +735,26 @@ public class GrapplingHookGunItem extends Item {
 
         // 6. 全部回收
         if (!level.isClientSide) {
+            // 统计成对组数：每对钩爪回收后返还 1 个双钩物品
+            int pairCount = 0;
+            java.util.Set<GrapplingHookEntity> visited = new java.util.HashSet<>();
+            for (GrapplingHookEntity hook : activeHooks) {
+                if (visited.contains(hook)) continue;
+                GrapplingHookEntity partner = hook.getPartnerHook();
+                visited.add(hook);
+                if (partner != null && !partner.isRemoved() && activeHooks.contains(partner)) {
+                    visited.add(partner);
+                    pairCount++;
+                }
+            }
             for (GrapplingHookEntity hook : activeHooks) {
                 hook.setRetracting();
                 hook.clearPartnerHook();
             }
+            // 双钩：按成对组数返还双钩物品到存储仓（溢出掉落）
+            refundDualHook(level, player, stack, pairCount);
+            // 回收后立即尝试补充，避免槽位空置
+            tryAutoRefillDualHook(stack);
         }
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                 ModSounds.HOOK_RETRACT.get(), SoundSource.PLAYERS, 0.8f, 1.0f);
@@ -662,6 +797,13 @@ public class GrapplingHookGunItem extends Item {
             }
         }
         if (firstHooked) {
+            // E1：已有第 2 枚在飞行中（未命中/未收回）时，不允许再发一枚，
+            // 否则场上会同时存在多枚 quickSecond，回收/升级逻辑会错乱。
+            for (GrapplingHookEntity h : quickHooks) {
+                if (h.isQuickSecond()) {
+                    return InteractionResultHolder.pass(stack);
+                }
+            }
             if (shootHook(level, player, stack, hand, null, true, true)) {
                 return InteractionResultHolder.sidedSuccess(stack, false);
             }
@@ -712,32 +854,31 @@ public class GrapplingHookGunItem extends Item {
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
         }
 
-        // ---- 2. 钩爪已用尽：需靠近 + 对准 ----
-        if (level.isClientSide) {
-            return InteractionResultHolder.sidedSuccess(stack, true);
-        }
-
-        boolean nearAny = false;
-        for (GrapplingHookEntity h : activeHooks) {
-            if (h.position().distanceTo(player.position()) <= RETRACT_RANGE) {
-                nearAny = true;
-                break;
-            }
-        }
-        if (!nearAny || !aimsAtAnyHookOrRope(player, activeHooks)) {
-            return InteractionResultHolder.pass(stack);
-        }
-
-        for (GrapplingHookEntity hook : activeHooks) {
-            hook.setRetracting();
-            hook.clearPartnerHook();
-        }
-        // 两枚钩爪都已发射：消耗钩爪槽中的双钩物品，并尝试自动补充
-        clearHookSlot(stack);
+        // ---- 2. 钩爪已用尽 ----
+        // 先尝试从存储仓自动补充（否则槽位永远空着，看起来像"物品消失"）
         tryAutoRefillDualHook(stack);
+        int reloaded = getLoadedHooks(stack);
+        if (reloaded > 0) {
+            GrapplingHookEntity anchorHook = null;
+            for (GrapplingHookEntity h : activeHooks) {
+                if (h.getPartnerHook() != null) continue;
+                if (anchorHook == null || h.getId() > anchorHook.getId()) {
+                    anchorHook = h;
+                }
+            }
+            if (!shootHook(level, player, stack, hand, anchorHook)) {
+                return InteractionResultHolder.fail(stack);
+            }
+            if (!level.isClientSide) {
+                setLoadedHooks(stack, reloaded - 1);
+                if (reloaded - 1 <= 0) {
+                    clearHookSlot(stack);
+                }
+            }
+            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        }
 
-        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                ModSounds.HOOK_RETRACT.get(), SoundSource.PLAYERS, 0.8f, 1.0f);
+        // 无可用双钩物品：非潜行右键不回收，回收统一由「潜行 + 右键」触发。
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
 
@@ -793,6 +934,12 @@ public class GrapplingHookGunItem extends Item {
         // ===== 快速模式：独立流程（优先于其它所有交互） =====
         if (getMode(stack) == Mode.QUICK) {
             return handleQuickMode(level, player, stack, hand, activeHooks);
+        }
+
+        // DUAL 模式：快速钩爪属于独立的快速状态机，
+        // 绝不能参与双钩配对（否则 handleDualMode 会把新钩爪连到快速钩爪上）。
+        if (hasDualHookModule(stack) && getMode(stack) == Mode.DUAL) {
+            activeHooks.removeIf(GrapplingHookEntity::isQuickMode);
         }
 
         // 非双钩模式下：已成对连接的双钩属于“已部署装备”，
@@ -1080,9 +1227,10 @@ public class GrapplingHookGunItem extends Item {
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
         if (level.isClientSide || !(entity instanceof Player player)) return;
 
-        // 仅在主手持有时处理充能与检测
-        boolean isMainHand = player.getMainHandItem() == stack;
-        if (!isMainHand) return;
+        // 主手或副手持有时都处理充能。
+        // 快速模式支持副手使用，若只认主手，副手摆荡时能量耗尽会直接掉下来。
+        boolean heldInHand = player.getMainHandItem() == stack || player.getOffhandItem() == stack;
+        if (!heldInHand) return;
 
         // 背罐自动充能：穿戴背罐时每秒转换 1s 气体为 1 点能量
         if (player.tickCount % 20 == 0) {

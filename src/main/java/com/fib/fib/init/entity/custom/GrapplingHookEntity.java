@@ -101,63 +101,6 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     /** 发射时那把枪所在的物品栏槽位（主手=快捷栏索引，副手=40）。 */
     private int sourceSlot = -1;
 
-    /** 待发射请求的超时时长（tick）：10 秒未完成则丢弃，防止条目永久驻留。 */
-    private static final long QUICK_SHOOT_TIMEOUT_TICKS = 200L;
-
-    /** 一条待发射请求：玩家 + 登记时的游戏时间。 */
-    private record PendingShot(net.minecraft.server.level.ServerPlayer player, long scheduledAt) {}
-
-    /** 中键“先回收再发射”的待发射玩家（UUID -> 请求），钩爪全部消失后发射。 */
-    private static final java.util.Map<java.util.UUID, PendingShot> PENDING_QUICK_SHOOT
-            = new java.util.concurrent.ConcurrentHashMap<>();
-
-    /** 登记一个「回收完成后立即发射」的请求（由 HookQuickShootPacket 调用）。 */
-    public static void scheduleQuickShoot(net.minecraft.server.level.ServerPlayer player) {
-        PENDING_QUICK_SHOOT.put(player.getUUID(),
-                new PendingShot(player, player.serverLevel().getGameTime()));
-    }
-
-    /** 服务器关闭时清空队列，避免静态 Map 跨存档持有旧引用。 */
-    public static void clearPendingQuickShoot() {
-        PENDING_QUICK_SHOOT.clear();
-    }
-
-    /** 供服务端 Tick 事件调用的队列处理逻辑。 */
-    public static void processPendingQuickShoot() {
-        if (PENDING_QUICK_SHOOT.isEmpty()) return;
-        java.util.Iterator<java.util.Map.Entry<java.util.UUID, PendingShot>> it =
-                PENDING_QUICK_SHOOT.entrySet().iterator();
-        while (it.hasNext()) {
-            var entry = it.next();
-            PendingShot req = entry.getValue();
-            net.minecraft.server.level.ServerPlayer player = (req == null) ? null : req.player();
-
-            // 1. 玩家无效（死亡/被移除/下线）-> 丢弃
-            if (player == null || !player.isAlive() || player.isRemoved()
-                    || player.hasDisconnected()) {
-                it.remove();
-                continue;
-            }
-
-            // 2. 超时（10 秒仍未发射）-> 丢弃，防止钩爪卡住导致条目永驻
-            long now = player.serverLevel().getGameTime();
-            if (req.scheduledAt() > 0 && now - req.scheduledAt() > QUICK_SHOOT_TIMEOUT_TICKS) {
-                it.remove();
-                continue;
-            }
-
-            // 3. 钩爪已全部消失 -> 发射并移除
-            boolean hasHook = !player.level().getEntitiesOfClass(
-                    GrapplingHookEntity.class,
-                    player.getBoundingBox().inflate(256.0),
-                    h -> h.getShooter() == player && !h.isRemoved()).isEmpty();
-            if (!hasHook) {
-                it.remove();
-                com.fib.fib.network.packet.HookQuickShootPacket.fireNow(player);
-            }
-        }
-    }
-
     /** 取玩家主手/副手中的钩爪枪（主手优先）。 */
     @Nullable
     private static ItemStack getHeldGun(Player player) {
@@ -186,6 +129,36 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         }
         this.gunStack = held.copy();
     }
+
+    /**
+     * 让已锚定钩爪的状态与当前模式保持一致（发射后再切换模式时生效）：
+     * - 方块目标：PULL ↔ CLIMB 之间随模式切换；
+     * - 生物/掉落物目标：始终保持 PULLING（无法攀岩）；
+     * - 快速模式 / 双钩模式：各有独立状态机，不参与同步。
+     */
+    private void syncStateWithMode() {
+        if (quickMode) return;
+        if (getTargetType() != TargetType.BLOCK) return;
+        State st = getHookState();
+        if (st != State.HOOKED && st != State.PULLING && st != State.CLIMBING) return;
+
+        GrapplingHookGunItem.Mode mode = GrapplingHookGunItem.getMode(gunStack);
+        if (mode == GrapplingHookGunItem.Mode.CLIMB && (st == State.HOOKED || st == State.PULLING)) {
+            entityData.set(DATA_AUTO_ASCEND, false);
+            setHookState(State.CLIMBING);
+        } else if (mode == GrapplingHookGunItem.Mode.PULL && st == State.CLIMBING) {
+            entityData.set(DATA_AUTO_ASCEND, false);
+            // 4A：切到牵引后不立即拉，先静止悬挂。
+            // 把绳长锁到当前距离，玩家才会被"挂在当前位置"而不是掉回球底。
+            Player shooter = getShooter();
+            if (shooter != null) {
+                setRopeLength((float) shooter.position().distanceTo(getAnchorPos()));
+            }
+            ropeLockedAfterClimb = true;
+            setHookState(State.HOOKED);
+        }
+    }
+
     private int obstructedTicks = 0;
     private Vec3 lastShooterPos = Vec3.ZERO;
     private int miningTicks = 0;
@@ -210,6 +183,16 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     private boolean quickSecond = false;
     /** 快速模式：已到达目标并处于悬停。 */
     private boolean quickHold = false;
+    /** 从攀岩切换到牵引后，是否处于"锁定当前位置"状态（绳长球面约束）。 */
+    private boolean ropeLockedAfterClimb = false;
+    /**
+     * 快速模式到达半径。
+     * 玩家碰撞箱半宽 0.3，钩爪贴在方块表面，玩家中心物理极限约 0.3 格。
+     * 取 0.5：既"拉到钩爪位置"，又保证一定能判定到达（0.1 永远到不了 → 持续耗能 → 被收回）。
+     */
+    private static final double QUICK_ARRIVE_RADIUS = 0.5;
+    /** 快速模式：悬停后可自由活动的球面半径（到达后才生效）。 */
+    private static final double QUICK_HOLD_RADIUS = 2.0;
 
     public GrapplingHookEntity(EntityType<? extends Projectile> entityType, Level level) {
         super(entityType, level);
@@ -298,6 +281,10 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
 
     public void setHookState(State state) {
         entityData.set(DATA_STATE, state.ordinal());
+        // 离开 HOOKED（进入 PULLING/CLIMBING/RETRACTING 等）即解除"切模式锁定"
+        if (state != State.HOOKED) {
+            ropeLockedAfterClimb = false;
+        }
     }
 
     public TargetType getTargetType() {
@@ -421,6 +408,22 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         return getPartnerHook() != null;
     }
 
+    /** 同步字段中的 partner id（-1 表示从未配对）。供渲染器判断"该配对但对方未加载"。 */
+    public int getPartnerHookId() {
+        return entityData.get(DATA_PARTNER_HOOK_ID);
+    }
+
+    /**
+     * 是否为「双钩模式」发射的钩爪（绳只连两钩之间，永不连玩家手）。
+     * 注意排除快速模式：QUICK 同样需要双钩模块，但它的绳必须连玩家手（蜘蛛侠摆荡）。
+     */
+    public boolean isDualHookMode() {
+        // 不用 getMode(gunStack)==DUAL：从 DUAL 切到 QUICK 后，已发射的双钩钩爪
+        // 会被 refreshGunState 刷成 QUICK 模式，但那两枚钩爪本身仍是双钩配对，
+        // 绳必须继续画在两钩之间。用 quickMode 区分即可。
+        return !quickMode && GrapplingHookGunItem.hasDualHookModule(gunStack);
+    }
+
     public void setQuickMode(boolean quick, boolean second) {
         this.quickMode = quick;
         this.quickSecond = second;
@@ -475,7 +478,12 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                 return;
             }
             State st = getHookState();
+            // 以下情况不因距离强制收回：
+            //  - 已成对的双钩（已部署装备）
+            //  - 快速模式（设计上就是远距离摆荡，钩爪常离玩家 80+ 格）
             if (st != State.RETRACTING && st != State.DROPPING
+                    && !isPaired()
+                    && !quickMode
                     && position().distanceTo(shooter.position()) > 80.0) {
                 setRetracting();
             }
@@ -488,6 +496,8 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             checkItemSwitch(shooter);
             // 每 tick 同步枪的状态（模式/挖掘模式），让发射后切换钻头模式即时生效
             refreshGunState(shooter);
+            // 发射后再切换 PULL/CLIMB 模式：让已锚定的方块目标跟随模式切换状态
+            syncStateWithMode();
 
             switch (getHookState()) {
                 case FLYING -> tickFlying(shooter);
@@ -567,6 +577,13 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             return;
         }
 
+        // 快速模式：枪仍在手（主手或副手）时，允许自由使用主手物品
+        // （吃东西 / 放方块 / 打怪），切走再切回枪不收回钩爪。
+        // 这豁免的是下方"切回原枪即收回"的逻辑，不影响"枪离手即收回"。
+        if (quickMode) {
+            return;
+        }
+
         if (sourceGun.isEmpty()) {
             return;
         }
@@ -590,11 +607,20 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
 
     // ==================== 1. 飞行阶段 ====================
 
+    /** 快速模式飞行超时（tick）：5 秒未命中则收回，避免射偏的钩爪永久占用 quickSecond 槽位。 */
+    private static final int QUICK_FLY_TIMEOUT_TICKS = 100;
+
     private void tickFlying(Player shooter) {
         Vec3 pos = position();
         Vec3 motion = getDeltaMovement();
 
         // 射程无距离限制（设计文档 §8）：飞行阶段不做距离判定。
+        // 但快速模式需要超时保护：第 2 枚射偏后会一直飞，占用 quickSecond，
+        // 导致玩家既发不了新的第 2 枚，也无法摆荡。
+        if (quickMode && tickCount > QUICK_FLY_TIMEOUT_TICKS) {
+            setRetracting();
+            return;
+        }
 
         // 水中阻力
         if (isInWater()) {
@@ -635,7 +661,7 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             // move 过程中发生碰撞（射线擦边未命中）时，锚定到相邻真实方块。
             // 注意：锚点必须用钩爪当前坐标，不能瞬移到方块中心（那会穿进方块内部）。
             if (this.horizontalCollision || this.verticalCollision) {
-                BlockPos anchor = findSolidBlockNearby();
+                BlockPos anchor = HookGeometry.findSolidBlockNearby(level(), position());
                 if (anchor != null) {
                     Vec3 loc = position();
                     onHit(new BlockHitResult(loc, Direction.UP, anchor, false));
@@ -653,67 +679,17 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
      * - 若点仍落在方块内部，则沿最短轴推出到表面。
      * 这样即使命中点/兜底坐标在空气中，锚点也会贴住方块，不会“悬空”。
      */
-    private Vec3 clampToBlockSurface(Vec3 point, BlockPos pos) {
-        var shape = level().getBlockState(pos).getShape(level(), pos);
-        if (shape.isEmpty()) {
-            // 非实心方块：退化为方块中心（但仍保证在方块范围内）
-            return new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
-        }
-        var box = shape.bounds().move(pos);
-        double x = Math.min(Math.max(point.x, box.minX), box.maxX);
-        double y = Math.min(Math.max(point.y, box.minY), box.maxY);
-        double z = Math.min(Math.max(point.z, box.minZ), box.maxZ);
-
-        // 若点落在内部（三个轴都严格在内），沿“离哪个面最近”推出 0.05
-        boolean insideX = x > box.minX + 1.0E-4 && x < box.maxX - 1.0E-4;
-        boolean insideY = y > box.minY + 1.0E-4 && y < box.maxY - 1.0E-4;
-        boolean insideZ = z > box.minZ + 1.0E-4 && z < box.maxZ - 1.0E-4;
-        if (insideX && insideY && insideZ) {
-            double dx = Math.min(x - box.minX, box.maxX - x);
-            double dy = Math.min(y - box.minY, box.maxY - y);
-            double dz = Math.min(z - box.minZ, box.maxZ - z);
-            final double push = 0.05;
-            if (dx <= dy && dx <= dz) {
-                x = (x - box.minX < box.maxX - x) ? box.minX - push : box.maxX + push;
-            } else if (dy <= dx && dy <= dz) {
-                y = (y - box.minY < box.maxY - y) ? box.minY - push : box.maxY + push;
-            } else {
-                z = (z - box.minZ < box.maxZ - z) ? box.minZ - push : box.maxZ + push;
-            }
-        }
-        return new Vec3(x, y, z);
-    }
-
-    /** 在钩爪附近（3x3x3）寻找一个非空气方块，用于碰撞时的锚定兜底。 */
-    @Nullable
-    private BlockPos findSolidBlockNearby() {
-        BlockPos center = BlockPos.containing(position());
-        Vec3 self = position();
-        BlockPos best = null;
-        double bestDist = Double.MAX_VALUE;
-        for (int dy = 1; dy >= -1; dy--) {
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    BlockPos p = center.offset(dx, dy, dz);
-                    BlockState st = level().getBlockState(p);
-                    // 只认有碰撞形状的方块（排除草、火把、空气等）
-                    if (st.isAir() || st.getCollisionShape(level(), p).isEmpty()) {
-                        continue;
-                    }
-                    double d = self.distanceToSqr(p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5);
-                    if (d < bestDist) {
-                        bestDist = d;
-                        best = p;
-                    }
-                }
-            }
-        }
-        return best;
-    }
-
     @Override
     protected boolean canHitEntity(Entity target) {
-        return super.canHitEntity(target) && target != getOwner() && !(target instanceof GrapplingHookEntity);
+        if (!super.canHitEntity(target) || target == getOwner() || target instanceof GrapplingHookEntity) {
+            return false;
+        }
+        // 快速模式：钩爪应一路飞向方块/生物，不能被沿途掉落物拦截
+        // （QUICK 同样需要双钩模块，若走 onHitEntity 会被"双钩不钩掉落物"分支收回）
+        if (quickMode && target instanceof ItemEntity) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -765,7 +741,7 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         }
 
         // 锚定方块：锚点必须落在该方块的表面（不能是空气位置，否则视觉上会“悬空钩住”）
-        Vec3 hitPos = clampToBlockSurface(hitResult.getLocation(), pos);
+        Vec3 hitPos = HookGeometry.clampToBlockSurface(level(), hitResult.getLocation(), pos);
         setPos(hitPos.x, hitPos.y, hitPos.z);
         setAnchorPos(hitPos);
         this.hookedBlockPos = pos;
@@ -832,8 +808,9 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         Player shooter = getShooter();
         if (shooter == null || target == shooter) return;
 
-        // 双钩模块不钩掉落物
+        // 双钩模块不钩掉落物：直接收回，避免钩爪停留在命中点悬空
         if (target instanceof ItemEntity item && GrapplingHookGunItem.hasDualHookModule(gunStack)) {
+            setRetracting();
             return;
         }
 
@@ -877,6 +854,26 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
 
             level().playSound(null, getX(), getY(), getZ(), ModSounds.HOOK_HIT_ENTITY.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
 
+            // 快速模式：能拉则拉（玩家被拉向目标，蜘蛛侠式），Boss 等不可拉实体已在上方收回
+            if (quickMode) {
+                setHookState(State.PULLING);
+                if (quickSecond) {
+                    // 本枚升级为新的第 1 枚（与方块命中逻辑一致）
+                    if (level() instanceof ServerLevel sl) {
+                        List<GrapplingHookEntity> others = sl.getEntitiesOfClass(
+                                GrapplingHookEntity.class,
+                                getBoundingBox().inflate(256.0),
+                                h -> h != this && h.isQuickMode() && !h.isQuickSecond()
+                                        && h.getShooter() == getShooter() && !h.isRemoved());
+                        for (GrapplingHookEntity h : others) {
+                            h.setRetracting();
+                        }
+                    }
+                    this.quickSecond = false;
+                }
+                return;
+            }
+
             // 若激活挖掘模块（且未装双钩），切入持续磨血状态
             if (GrapplingHookGunItem.isMiningModuleEffective(gunStack)
                     && GrapplingHookGunItem.getMiningMode(gunStack) != GrapplingHookGunItem.MiningMode.OFF) {
@@ -916,7 +913,8 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         }
 
         // ---------- 2. 双钩模式 ----------
-        if (GrapplingHookGunItem.getMode(gunStack) == GrapplingHookGunItem.Mode.DUAL) {
+        // 同上：用 isDualHookMode() 而非 getMode(gunStack)，避免切到 QUICK 后双钩钩爪误入其它分支
+        if (isDualHookMode()) {
             if (getTargetType() == TargetType.BLOCK) {
                 BlockPos checkPos = resolveHookedBlockPos();
                 if (checkPos == null || level().getBlockState(checkPos).isAir()) {
@@ -964,10 +962,22 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             }
         }
 
-        // 终点潜行收回
-        double dist = position().distanceTo(shooter.position());
-        if (getTargetType() == TargetType.BLOCK && dist <= 2.2 && shooter.isShiftKeyDown()) {
-            setRetracting();
+        // 从攀岩切到牵引后：把玩家"挂在当前位置"（绳长球面约束）。
+        // 仅在 CLIMB->PULL 切换后生效，不影响双钩/普通 HOOKED 的原有行为。
+        if (getTargetType() == TargetType.BLOCK && ropeLockedAfterClimb) {
+            Vec3 anchor = getAnchorPos();
+            Vec3 pPos = shooter.position();
+            double dist = pPos.distanceTo(anchor);
+            double ropeLen = getRopeLength();
+            if (dist > ropeLen && dist > 0.001) {
+                Vec3 radialDir = anchor.subtract(pPos).scale(1.0 / dist);
+                Vec3 cur = shooter.getDeltaMovement();
+                double radial = cur.dot(radialDir);   // <0 表示远离
+                if (radial < 0) {
+                    applyMotionToPlayer(shooter, cur.subtract(radialDir.scale(radial)));
+                }
+            }
+            shooter.resetFallDistance();
         }
     }
 
@@ -981,7 +991,7 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         Vec3 anchor = getAnchorPos();
         Vec3 pPos = shooter.position();
         double d = pPos.distanceTo(anchor);
-        if (d > 2.0) {
+        if (d > QUICK_HOLD_RADIUS) {
             Vec3 dir = anchor.subtract(pPos).normalize();   // 指向锚点
             Vec3 cur = shooter.getDeltaMovement();
             double outward = -cur.dot(dir);                 // >0 表示正在远离
@@ -989,9 +999,10 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                 cur = cur.add(dir.scale(outward));          // 消除向外的分量
             }
             // 轻微的向内回拉，帮助贴回球面（不做重力抵消）
-            cur = cur.add(dir.scale(Math.min(0.25, (d - 2.0) * 0.15)));
+            cur = cur.add(dir.scale(Math.min(0.25, (d - QUICK_HOLD_RADIUS) * 0.15)));
             applyMotionToPlayer(shooter, cur);
         }
+        // 在球内时不覆盖玩家速度：保留本地输入/重力（与攀岩的"无阻力"一致）
         shooter.resetFallDistance();
     }
 
@@ -1013,23 +1024,6 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         return level().getBlockState(base).isAir() ? null : base;
     }
 
-    /** 锚点附近（1 格内）是否存在实心方块，用于兜底修复“悬空钩住”。 */
-    private boolean hasSolidBlockNearAnchor() {
-        BlockPos base = BlockPos.containing(getAnchorPos());
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    BlockPos p = base.offset(dx, dy, dz);
-                    BlockState st = level().getBlockState(p);
-                    if (!st.isAir() && !st.getCollisionShape(level(), p).isEmpty()) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
     private void updateAnchorTarget() {
         if (getTargetType() == TargetType.LIVING || getTargetType() == TargetType.ITEM) {
             if (hookedEntity == null || !hookedEntity.isAlive() || hookedEntity.isRemoved()) {
@@ -1047,6 +1041,16 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     private void tickPulling(Player shooter) {
         updateAnchorTarget();
 
+        // 方块消失检测：与 tickHooked / tickClimbing / tickMining 一致。
+        // 缺少这一步时，方块被破坏后钩爪会继续拉向空气位置，玩家看到"悬空牵引"。
+        if (getTargetType() == TargetType.BLOCK) {
+            BlockPos checkPos = resolveHookedBlockPos();
+            if (checkPos == null || level().getBlockState(checkPos).isAir()) {
+                startDropping();
+                return;
+            }
+        }
+
         // 牵引能量持续消耗（0.005/tick，加压模块下 0.010/tick，调为原速度十分之一）
         float energyCost = pressurized ? 0.010f : 0.005f;
         ItemStack held = getHeldGun(shooter);
@@ -1060,187 +1064,235 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
 
         // A. 方块牵引
         if (tType == TargetType.BLOCK) {
-            Vec3 playerPos = shooter.position();
-            double distance = playerPos.distanceTo(anchor);
-
-            // 到达方块前 2.0 格
-            if (distance <= 2.0) {
-                if (quickMode) {
-                    // 快速模式：进入悬停状态（玩家可在 2 格范围内自由移动）
-                    quickHold = true;
-                    setHookState(State.HOOKED);
-                } else {
-                    setHookState(State.HOOKED);
-                }
-                applyMotionToPlayer(shooter, Vec3.ZERO);
-                shooter.resetFallDistance();
-                return;
-            }
-
-            // 障碍物阻挡检测：0.5s（10 ticks）位移过小则自动收回
-            if (lastShooterPos != Vec3.ZERO && playerPos.distanceTo(lastShooterPos) < 0.05) {
-                obstructedTicks++;
-                if (obstructedTicks >= 10) {
-                    setRetracting();
-                    return;
-                }
-            } else {
-                obstructedTicks = 0;
-            }
-            lastShooterPos = playerPos;
-
-            // ===== 快速模式：直接沿绳方向拉向目标（蜘蛛侠式，不做钟摆）=====
-            if (quickMode) {
-                Vec3 dir = anchor.subtract(playerPos).normalize();
-                float maxSpeed = pressurized ? 1.2f : 0.9f;
-                // 临近目标线性减速
-                float speed = (float) Math.max(0.12, Math.min(maxSpeed, (distance - 2.0) * 0.5));
-                applyMotionToPlayer(shooter, dir.scale(speed));
-                shooter.resetFallDistance();
-                if (tickCount % 6 == 0) {
-                    level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
-                            ModSounds.HOOK_PULL.get(), SoundSource.PLAYERS, 0.4f, 1.2f);
-                }
-                return;
-            }
-
-            // ===== 绳索张力 + 钟摆摆动（物理化牵引）=====
-            // 不再“直线平移”，而是：
-            //  1. 只沿绳方向施加拉力（径向加速度），越远拉力越大；
-            //  2. 完整保留切向速度 -> 玩家会像钟摆一样荡出弧线；
-            //  3. 切向速度加轻微阻尼（绳索摩擦），避免永动；
-            //  4. 限制总速度，防止过冲。
-            float maxPullSpeed = pressurized ? 0.9f : 0.6f;
-
-            Vec3 dir = anchor.subtract(playerPos).normalize();   // 指向锚点
-            Vec3 cur = shooter.getDeltaMovement();
-
-            double radial = cur.dot(dir);                        // 径向分量（正=朝锚点）
-            Vec3 radialPart = dir.scale(radial);
-            Vec3 tangential = cur.subtract(radialPart);          // 切向分量（摆动）
-
-            // 1) 径向拉力：距离越远加速度越大（0.06 ~ 0.22）
-            double distFactor = Math.min(1.0, Math.max(0.0, (distance - 2.0) / 10.0));
-            double pullAccel = 0.06 + 0.16 * distFactor;
-            Vec3 newVel = cur.add(dir.scale(pullAccel));
-
-            // 2) 切向轻微阻尼（绳索摩擦，5%）
-            newVel = newVel.subtract(tangential.scale(0.05));
-
-            // 3) 径向速度上限：接近目标时限制，避免过冲
-            double newRadial = newVel.dot(dir);
-            double radialCap = (distance <= 3.0) ? Math.min(maxPullSpeed, distance * 0.25) : maxPullSpeed;
-            if (newRadial > radialCap) {
-                newVel = newVel.subtract(dir.scale(newRadial - radialCap));
-            }
-
-            // 4) 总速度上限
-            double len = newVel.length();
-            if (len > maxPullSpeed) {
-                newVel = newVel.scale(maxPullSpeed / len);
-            }
-
-            applyMotionToPlayer(shooter, newVel);
-
-            shooter.resetFallDistance();
-            if (tickCount % 6 == 0) {
-                level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), ModSounds.HOOK_PULL.get(), SoundSource.PLAYERS, 0.4f, 1.2f);
-            }
+            pullTowardsBlock(shooter, anchor);
         }
 
         // B. 生物牵引
         else if (tType == TargetType.LIVING && hookedEntity instanceof LivingEntity target) {
-            if (!target.isAlive() || target.isRemoved()) {
-                setRetracting();
-                return;
-            }
-
-            // 到达目标附近：停止牵引并切入 HOOKED，避免近距离方向翻转导致来回抖动
-            if (shooter.position().distanceTo(target.position()) <= 2.0) {
-                setHookState(State.HOOKED);
-                applyMotionToPlayer(shooter, Vec3.ZERO);
-                target.setDeltaMovement(Vec3.ZERO);
-                target.hurtMarked = true;
-                shooter.resetFallDistance();
-                return;
-            }
-
-            double playerVol = shooter.getBbWidth() * shooter.getBbWidth() * shooter.getBbHeight();
-            double targetVol = target.getBbWidth() * target.getBbWidth() * target.getBbHeight();
-            boolean isHuge = targetVol >= 1.5 * playerVol;
-            boolean isHighHealth = target.getMaxHealth() >= 150.0f;
-            boolean isHeavyBoss = isHuge || isHighHealth;
-
-            // 双钩模块激活时抓取模块不生效，按基础牵引处理
-            boolean hasGrapple = GrapplingHookGunItem.isGrappleModuleEffective(gunStack);
-            GrapplingHookGunItem.GrappleMode gMode = GrapplingHookGunItem.getGrappleMode(gunStack);
-
-            float pullSpeed = pressurized ? 0.95f : 0.65f;
-            Vec3 toTarget = target.position().subtract(shooter.position()).normalize();
-            Vec3 toPlayer = shooter.position().subtract(target.position()).normalize();
-
-            if (hasGrapple && gMode == GrapplingHookGunItem.GrappleMode.STABLE) {
-                // 1. 抓取模块 - 稳固模式：自身绝对固定不动，极大增强将目标拉向玩家的能力
-                applyMotionToPlayer(shooter, Vec3.ZERO);
-                target.setDeltaMovement(toPlayer.scale(pullSpeed * 1.2).add(0, 0.16, 0));
-                target.hurtMarked = true;
-            } else if (hasGrapple && gMode == GrapplingHookGunItem.GrappleMode.PULL_TOWARDS) {
-                // 2. 抓取模块 - 拉向模式：除碰撞箱极小生物外，其余一律将玩家拉向目标
-                boolean isTiny = targetVol < 0.5 * playerVol;
-                if (isTiny) {
-                    target.setDeltaMovement(toPlayer.scale(pullSpeed * 1.0).add(0, 0.12, 0));
-                    target.hurtMarked = true;
-                } else {
-                    applyMotionToPlayer(shooter, toTarget.scale(pullSpeed));
-                }
-            } else {
-                // 3. 基础默认牵引逻辑
-                if (isHeavyBoss) {
-                    // 大怪 (>= 1.5倍玩家体型) 或 高血 (>= 150血)：稳定把白板玩家拉向怪物
-                    applyMotionToPlayer(shooter, toTarget.scale(pullSpeed));
-                    target.setDeltaMovement(target.getDeltaMovement().scale(0.8));
-                } else {
-                    // 普通中小型怪：大幅提高把怪拉向玩家的能力，施加轻微上抛防卡地面
-                    target.setDeltaMovement(toPlayer.scale(pullSpeed * 1.15).add(0, 0.18, 0));
-                    target.hurtMarked = true;
-                    applyMotionToPlayer(shooter, toTarget.scale(pullSpeed * 0.05));
-                }
-            }
-            shooter.resetFallDistance();
-            if (tickCount % 6 == 0) {
-                level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), ModSounds.HOOK_PULL.get(), SoundSource.PLAYERS, 0.4f, 1.2f);
-            }
+            pullTowardsLiving(shooter, target);
         }
 
         // C. 掉落物牵引
         else if (tType == TargetType.ITEM && hookedEntity instanceof ItemEntity item) {
-            if (!item.isAlive() || item.isRemoved()) {
-                setRetracting();
+            pullTowardsItem(shooter, item);
+        }
+    }
+
+    /** 方块牵引：快速模式直线拉近；普通模式绳索张力 + 钟摆摆动。 */
+    private void pullTowardsBlock(Player shooter, Vec3 anchor) {
+        Vec3 playerPos = shooter.position();
+        double distance = playerPos.distanceTo(anchor);
+
+        // 到达判定：快速模式要真正拉到钩爪位置，普通模式仍为 2 格
+        double arriveRadius = quickMode ? QUICK_ARRIVE_RADIUS : 2.0;
+        if (distance <= arriveRadius) {
+            if (quickMode) {
+                // 快速模式：进入悬停状态（玩家在钩爪附近小范围自由活动）
+                quickHold = true;
+            }
+            setHookState(State.HOOKED);
+            applyMotionToPlayer(shooter, Vec3.ZERO);
+            shooter.resetFallDistance();
+            return;
+        }
+
+        // 障碍物阻挡检测：0.5s（10 ticks）位移过小则处理
+        if (lastShooterPos != Vec3.ZERO && playerPos.distanceTo(lastShooterPos) < 0.05) {
+            obstructedTicks++;
+            if (obstructedTicks >= 10) {
+                if (quickMode) {
+                    // 快速模式撞上障碍：转入悬停，不收回（收回会让钩爪"拉一会就没了"）
+                    quickHold = true;
+                    setHookState(State.HOOKED);
+                } else {
+                    setRetracting();
+                }
                 return;
             }
-            Vec3 toPlayer = shooter.position().add(0, 0.6, 0).subtract(item.position());
-            double dist = toPlayer.length();
+        } else {
+            obstructedTicks = 0;
+        }
+        lastShooterPos = playerPos;
 
-            if (dist < 1.8) {
-                // 接近玩家自动拾取
-                item.setPickUpDelay(0);
-                item.playerTouch(shooter);
-                if (itemProtection) {
-                    item.setInvulnerable(false);
-                }
-                item.setNoGravity(false);
-                setRetracting();
+        // ===== 快速模式：直接沿绳方向拉向目标（蜘蛛侠式，不做钟摆）=====
+        if (quickMode) {
+            Vec3 dir = anchor.subtract(playerPos).normalize();
+            float maxSpeed = pressurized ? 1.2f : 0.9f;
+            // 临近目标线性减速（终点为钩爪位置，而非 2 格外）
+            float speed = (float) Math.max(0.12, Math.min(maxSpeed, (distance - QUICK_ARRIVE_RADIUS) * 0.5));
+            applyMotionToPlayer(shooter, dir.scale(speed));
+            shooter.resetFallDistance();
+            if (tickCount % 6 == 0) {
+                level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
+                        ModSounds.HOOK_PULL.get(), SoundSource.PLAYERS, 0.4f, 1.2f);
+            }
+            return;
+        }
+
+        // ===== 绳索张力 + 钟摆摆动（物理化牵引）=====
+        // 不再“直线平移”，而是：
+        //  1. 只沿绳方向施加拉力（径向加速度），越远拉力越大；
+        //  2. 完整保留切向速度 -> 玩家会像钟摆一样荡出弧线；
+        //  3. 切向速度加轻微阻尼（绳索摩擦），避免永动；
+        //  4. 限制总速度，防止过冲。
+        float maxPullSpeed = pressurized ? 0.9f : 0.6f;
+
+        Vec3 dir = anchor.subtract(playerPos).normalize();   // 指向锚点
+        Vec3 cur = shooter.getDeltaMovement();
+
+        double radial = cur.dot(dir);                        // 径向分量（正=朝锚点）
+        Vec3 radialPart = dir.scale(radial);
+        Vec3 tangential = cur.subtract(radialPart);          // 切向分量（摆动）
+
+        // 1) 径向拉力：距离越远加速度越大（0.06 ~ 0.22）
+        double distFactor = Math.min(1.0, Math.max(0.0, (distance - 2.0) / 10.0));
+        double pullAccel = 0.06 + 0.16 * distFactor;
+        Vec3 newVel = cur.add(dir.scale(pullAccel));
+
+        // 2) 切向轻微阻尼（绳索摩擦，5%）
+        newVel = newVel.subtract(tangential.scale(0.05));
+
+        // 3) 径向速度上限：接近目标时限制，避免过冲
+        double newRadial = newVel.dot(dir);
+        double radialCap = (distance <= 3.0) ? Math.min(maxPullSpeed, distance * 0.25) : maxPullSpeed;
+        if (newRadial > radialCap) {
+            newVel = newVel.subtract(dir.scale(newRadial - radialCap));
+        }
+
+        // 4) 总速度上限
+        double len = newVel.length();
+        if (len > maxPullSpeed) {
+            newVel = newVel.scale(maxPullSpeed / len);
+        }
+
+        applyMotionToPlayer(shooter, newVel);
+
+        shooter.resetFallDistance();
+        if (tickCount % 6 == 0) {
+            level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
+                    ModSounds.HOOK_PULL.get(), SoundSource.PLAYERS, 0.4f, 1.2f);
+        }
+    }
+
+    /**
+     * 生物牵引。
+     * <p>
+     * - 抓取模块·稳固：玩家不动，把目标拉向玩家；
+     * - 抓取模块·拉向：小碰撞箱目标被拉向玩家，其余把玩家拉向目标；
+     * - 默认：大体型/高血量把玩家拉向目标，中小型把目标拉向玩家。
+     */
+    private void pullTowardsLiving(Player shooter, LivingEntity target) {
+        if (!target.isAlive() || target.isRemoved()) {
+            setRetracting();
+            return;
+        }
+
+        // 快速模式：玩家被拉向目标（蜘蛛侠式），不受体型/抓取模块影响
+        if (quickMode) {
+            Vec3 dir = target.position().add(0, target.getBbHeight() / 2.0, 0).subtract(shooter.position());
+            double dist = dir.length();
+            if (dist <= QUICK_ARRIVE_RADIUS) {
+                quickHold = true;
+                setHookState(State.HOOKED);
+                applyMotionToPlayer(shooter, Vec3.ZERO);
+                shooter.resetFallDistance();
+                return;
+            }
+            float maxSpeed = pressurized ? 1.2f : 0.9f;
+            float speed = (float) Math.max(0.12, Math.min(maxSpeed, (dist - QUICK_ARRIVE_RADIUS) * 0.5));
+            applyMotionToPlayer(shooter, dir.normalize().scale(speed));
+            shooter.resetFallDistance();
+            return;
+        }
+
+        // 到达目标附近：停止牵引并切入 HOOKED，避免近距离方向翻转导致来回抖动
+        if (shooter.position().distanceTo(target.position()) <= 2.0) {
+            setHookState(State.HOOKED);
+            applyMotionToPlayer(shooter, Vec3.ZERO);
+            target.setDeltaMovement(Vec3.ZERO);
+            target.hurtMarked = true;
+            shooter.resetFallDistance();
+            return;
+        }
+
+        double playerVol = shooter.getBbWidth() * shooter.getBbWidth() * shooter.getBbHeight();
+        double targetVol = target.getBbWidth() * target.getBbWidth() * target.getBbHeight();
+        boolean isHuge = targetVol >= 1.5 * playerVol;
+        boolean isHighHealth = target.getMaxHealth() >= 150.0f;
+        boolean isHeavyBoss = isHuge || isHighHealth;
+
+        // 双钩模块激活时抓取模块不生效，按基础牵引处理
+        boolean hasGrapple = GrapplingHookGunItem.isGrappleModuleEffective(gunStack);
+        GrapplingHookGunItem.GrappleMode gMode = GrapplingHookGunItem.getGrappleMode(gunStack);
+
+        float pullSpeed = pressurized ? 0.95f : 0.65f;
+        Vec3 toTarget = target.position().subtract(shooter.position()).normalize();
+        Vec3 toPlayer = shooter.position().subtract(target.position()).normalize();
+
+        if (hasGrapple && gMode == GrapplingHookGunItem.GrappleMode.STABLE) {
+            // 1. 抓取模块 - 稳固模式：自身绝对固定不动，极大增强将目标拉向玩家的能力
+            applyMotionToPlayer(shooter, Vec3.ZERO);
+            target.setDeltaMovement(toPlayer.scale(pullSpeed * 1.2).add(0, 0.16, 0));
+            target.hurtMarked = true;
+        } else if (hasGrapple && gMode == GrapplingHookGunItem.GrappleMode.PULL_TOWARDS) {
+            // 2. 抓取模块 - 拉向模式：除碰撞箱极小生物外，其余一律将玩家拉向目标
+            boolean isTiny = targetVol < 0.5 * playerVol;
+            if (isTiny) {
+                target.setDeltaMovement(toPlayer.scale(pullSpeed * 1.0).add(0, 0.12, 0));
+                target.hurtMarked = true;
             } else {
-                item.setNoGravity(true);
-                Vec3 motion = toPlayer.normalize().scale(1.1).add(0, 0.18, 0);
-                item.setDeltaMovement(motion);
-                item.hasImpulse = true;
-                item.hurtMarked = true;
-                if (itemProtection) {
-                    item.clearFire();
-                    if (item.getY() < level().getMinBuildHeight() + 1) {
-                        item.setDeltaMovement(motion.x, 0.5, motion.z);
-                    }
+                applyMotionToPlayer(shooter, toTarget.scale(pullSpeed));
+            }
+        } else {
+            // 3. 基础默认牵引逻辑
+            if (isHeavyBoss) {
+                // 大怪 (>= 1.5倍玩家体型) 或 高血 (>= 150血)：稳定把白板玩家拉向怪物
+                applyMotionToPlayer(shooter, toTarget.scale(pullSpeed));
+                target.setDeltaMovement(target.getDeltaMovement().scale(0.8));
+            } else {
+                // 普通中小型怪：大幅提高把怪拉向玩家的能力，施加轻微上抛防卡地面
+                target.setDeltaMovement(toPlayer.scale(pullSpeed * 1.15).add(0, 0.18, 0));
+                target.hurtMarked = true;
+                applyMotionToPlayer(shooter, toTarget.scale(pullSpeed * 0.05));
+            }
+        }
+        shooter.resetFallDistance();
+        if (tickCount % 6 == 0) {
+            level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
+                    ModSounds.HOOK_PULL.get(), SoundSource.PLAYERS, 0.4f, 1.2f);
+        }
+    }
+
+    /**
+     * 掉落物牵引：拉向玩家，接近后自动拾取；掉落物保护模块额外防止被销毁。
+     */
+    private void pullTowardsItem(Player shooter, ItemEntity item) {
+        if (!item.isAlive() || item.isRemoved()) {
+            setRetracting();
+            return;
+        }
+        Vec3 toPlayer = shooter.position().add(0, 0.6, 0).subtract(item.position());
+        double dist = toPlayer.length();
+
+        if (dist < 1.8) {
+            // 接近玩家自动拾取
+            item.setPickUpDelay(0);
+            item.playerTouch(shooter);
+            if (itemProtection) {
+                item.setInvulnerable(false);
+            }
+            item.setNoGravity(false);
+            setRetracting();
+        } else {
+            item.setNoGravity(true);
+            Vec3 motion = toPlayer.normalize().scale(1.1).add(0, 0.18, 0);
+            item.setDeltaMovement(motion);
+            item.hasImpulse = true;
+            item.hurtMarked = true;
+            if (itemProtection) {
+                item.clearFire();
+                if (item.getY() < level().getMinBuildHeight() + 1) {
+                    item.setDeltaMovement(motion.x, 0.5, motion.z);
                 }
             }
         }
@@ -1290,9 +1342,9 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         double radialSpeed = vel.dot(radialDir); // >0 朝锚点
 
         // 攀岩自动上升速度（已按需求减半）
-        double maxSpeed = pressurized ? 0.34 : 0.225;
-        double nearFactor = Math.min(1.0, Math.max(0.0, (dist - 1.6) / 6.0));
-        double targetSpeed = 0.045 + (maxSpeed - 0.045) * nearFactor;
+        double maxSpeed = pressurized ? 0.45 : 0.30;
+        double nearFactor = Math.min(1.0, Math.max(0.0, (dist - 1.6) / 5.0));
+        double targetSpeed = 0.08 + (maxSpeed - 0.08) * nearFactor;
 
         // 攀岩 = 绳长约束：玩家在绳长内自由活动（可左右摆荡、可攀爬），
         // 只有超出绳长时才被拉住。攀爬由 Z+左/右键（改绳长）驱动，不自动拉向锚点。
@@ -1319,7 +1371,7 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         Vec3 newVel = vel;
 
         // 安全网：锚定状态下若周围没有任何实心方块，说明锚点已失效 -> 掉落
-        if (!hasSolidBlockNearAnchor()) {
+        if (!HookGeometry.hasSolidBlockNear(level(), getAnchorPos())) {
             startDropping();
             return;
         }
@@ -1341,7 +1393,11 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             }
         }
 
-        applyMotionToPlayer(shooter, newVel);
+        // 仅在速度被修正时才覆盖玩家速度并同步客户端：
+        // 每 tick 无条件覆盖会抹掉玩家本地预测的输入加速，产生“阻力感”。
+        if (newVel.distanceToSqr(vel) > 1.0E-8) {
+            applyMotionToPlayer(shooter, newVel);
+        }
 
         shooter.resetFallDistance();
     }
@@ -1360,15 +1416,22 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                     if (dist <= stopDist) {
                         return;
                     }
-                    // 只缩短绳长（缩小活动半径）；绳长变小后，约束会自然把人拉近
                     setRopeLength(getRopeLength() - 0.25f);
+                    // 文档 9.5：手动上升速度 0.20。只改绳长不会产生位移，
+                    // 必须额外施加径向朝锚点的速度，否则玩家感觉“没反应”。
+                    Vec3 dir = anchor.subtract(playerPos).scale(1.0 / dist);
+                    Vec3 cur = shooter.getDeltaMovement();
+                    double radial = cur.dot(dir);   // >0 朝锚点
+                    if (radial < 0.20) {
+                        applyMotionToPlayer(shooter, cur.add(dir.scale(0.20 - radial)));
+                    }
                     shooter.resetFallDistance();
                 }
             }
             case HookClimbPacket.ACTION_CLIMB_DOWN -> {
                 entityData.set(DATA_AUTO_ASCEND, false);
                 // 只延长绳长（扩大活动半径），不施加任何推力：
-                // 玩家靠自身重力/移动即可离开钩爪，避免被“推开”。
+                // 玩家靠自身重力/输入即可远离钩爪，避免被"推开"。
                 setRopeLength(getRopeLength() + 0.25f);
             }
             case HookClimbPacket.ACTION_AUTO_ASCEND_TOGGLE -> toggleAutoAscend();
@@ -1468,7 +1531,7 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                     List<ItemStack> drops = Block.getDrops(state, serverLevel, miningBlockPos, null, shooter, held);
                     serverLevel.destroyBlock(miningBlockPos, false);
 
-                    // 将掉落物存入钩爪 16 格仓
+                    // 将掉落物存入钩爪存储仓（8 格）
                     ItemStackHandler storage = GrapplingHookGunItem.getStorageHandler(held);
                     for (ItemStack drop : drops) {
                         ItemStack remainder = ItemHandlerHelper.insertItem(storage, drop, false);
@@ -1479,7 +1542,7 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                     }
                     GrapplingHookGunItem.saveStorageHandler(held, storage);
                 }
-                setRetracting();
+                startDropping();
             }
         }
 
@@ -1523,12 +1586,32 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
 
     /** 自由下落：受重力下落，落地后静止保留（不消失，可右键回收）。 */
     private void tickDropping() {
-        // 已落地：检查脚下方块是否还在，被破坏则重新下落
+        // 已落地：检查脚下方块是否还在，被破坏则重新下落。
+        // 用碰撞形状而非 isAir：水/草/火把等无碰撞方块不应阻止下落。
         if (dropLanded) {
             BlockPos below = BlockPos.containing(getX(), getY() - 0.1, getZ());
-            if (level().getBlockState(below).isAir()) {
+            BlockState belowState = level().getBlockState(below);
+            if (belowState.isAir() || belowState.getCollisionShape(level(), below).isEmpty()) {
                 dropLanded = false;   // 悬空 -> 继续下落
             } else {
+                // 落地后若装有挖掘模块且模式开启：继续挖掘脚下这块方块（钻头向下连挖）
+                Player shooter = getShooter();
+                ItemStack held = shooter != null ? getHeldGun(shooter) : null;
+                if (shooter != null && held != null
+                        && GrapplingHookGunItem.isMiningModuleEffective(held)
+                        && GrapplingHookGunItem.getMiningMode(held) != GrapplingHookGunItem.MiningMode.OFF) {
+                    float hd = belowState.getDestroySpeed(level(), below);
+                    if (hd >= 0.0f) {
+                        this.miningBlockPos = below;
+                        this.miningTicks = 0;
+                        this.maxMiningTicks = Math.max(10, (int) (hd * 12));
+                        this.hookedBlockPos = below;
+                        setTargetType(TargetType.BLOCK);
+                        setAnchorPos(new Vec3(below.getX() + 0.5, below.getY() + 1.0, below.getZ() + 0.5));
+                        setHookState(State.MINING);
+                        return;
+                    }
+                }
                 setDeltaMovement(Vec3.ZERO);
                 return;
             }
@@ -1629,6 +1712,9 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         buffer.writeInt(getHookMaterialId());
         GrapplingHookEntity partner = getPartnerHook();
         buffer.writeInt(partner != null ? partner.getId() : -1);
+        // 快速模式标记：客户端渲染器 isDualHookMode() 需要它来区分「快速摆荡绳」与「双钩绳」
+        buffer.writeBoolean(quickMode);
+        buffer.writeBoolean(quickSecond);
     }
 
     @Override
@@ -1656,6 +1742,8 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         if (partnerId != -1) {
             entityData.set(DATA_PARTNER_HOOK_ID, partnerId);
         }
+        this.quickMode = additionalData.readBoolean();
+        this.quickSecond = additionalData.readBoolean();
     }
 
     @Override

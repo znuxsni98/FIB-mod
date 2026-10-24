@@ -146,6 +146,25 @@ public class KeyBindings {
                 }
             }
 
+            // 副手钩爪枪右键支持（仅快速模式）：
+            // 主手拿着其它物品（非空、非钩爪枪）时，原版不会触发副手 use。
+            // 快速模式需要在摆荡中边用主手做事，故由客户端主动转发。
+            //
+            // 注意：不 setCanceled —— 主手物品（食物、方块等）的右键必须照常生效，
+            // 否则"边摆荡边吃东西/放方块"会被破坏。副手发包与主手使用互不冲突。
+            // 其它模式不转发，避免干扰主手物品的正常功能。
+            if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_RIGHT
+                    && event.getAction() == GLFW.GLFW_PRESS) {
+                ItemStack main = player.getMainHandItem();
+                ItemStack off = player.getOffhandItem();
+                if (!main.isEmpty()
+                        && !(main.getItem() instanceof GrapplingHookGunItem)
+                        && off.getItem() instanceof GrapplingHookGunItem
+                        && GrapplingHookGunItem.getMode(off) == GrapplingHookGunItem.Mode.QUICK) {
+                    ModMessages.sendToServer(new com.fib.fib.network.packet.OffhandGunUsePacket());
+                }
+            }
+
             // 中键：所有模式均为「先回收再发射」；
             // 攀岩模式下按住 Z + 中键 = 自动上升（自动拉取）。
             if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE && event.getAction() == GLFW.GLFW_PRESS) {

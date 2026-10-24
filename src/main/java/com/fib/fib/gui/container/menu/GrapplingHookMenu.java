@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * 钩爪枪升级与仓储配置容器菜单。
- * 管理 5 大类升级部件槽位（含智能升级模块解锁的第 2 模块槽）与 16 格掉落物暂存仓。
+ * 管理 5 大类升级部件槽位（含智能升级模块解锁的第 2 模块槽）与 8 格掉落物暂存仓。
  */
 public class GrapplingHookMenu extends AbstractContainerMenu {
     private final ItemStack gunStack;
@@ -125,11 +125,55 @@ public class GrapplingHookMenu extends AbstractContainerMenu {
                 // 放入双钩模块前：记住当前模式
                 if (!wasDual && willDual) {
                     GrapplingHookGunItem.rememberPreDualMode(gunStack);
+                    // 安装双钩模块：回收当前所有已发射钩爪（普通单钩不再适用）
+                    var player = playerInventory.player;
+                    if (!player.level().isClientSide) {
+                        for (var hook : player.level().getEntitiesOfClass(
+                                com.fib.fib.init.entity.custom.GrapplingHookEntity.class,
+                                player.getBoundingBox().inflate(256.0),
+                                h -> h.getShooter() == player && !h.isRemoved()
+                                        && h.getHookState() != com.fib.fib.init.entity.custom.GrapplingHookEntity.State.RETRACTING
+                                        && h.getHookState() != com.fib.fib.init.entity.custom.GrapplingHookEntity.State.DROPPING)) {
+                            hook.setRetracting();
+                            hook.clearPartnerHook();
+                        }
+                    }
                 }
                 super.set(stack);
                 // 卸下双钩模块后：恢复此前模式
                 if (wasDual && !willDual) {
                     GrapplingHookGunItem.restorePreDualMode(gunStack);
+                    var player = playerInventory.player;
+                    if (!player.level().isClientSide) {
+                        // 回收该玩家所有已发射的双钩钩爪（含「发射一半」的单枚与已成对的）
+                        var hooks = player.level().getEntitiesOfClass(
+                                com.fib.fib.init.entity.custom.GrapplingHookEntity.class,
+                                player.getBoundingBox().inflate(256.0),
+                                h -> h.getShooter() == player && !h.isRemoved()
+                                        && h.getHookState() != com.fib.fib.init.entity.custom.GrapplingHookEntity.State.RETRACTING
+                                        && h.getHookState() != com.fib.fib.init.entity.custom.GrapplingHookEntity.State.DROPPING);
+
+                        // 统计成对组数：只有成对才算「已消耗」，才需要返还
+                        int pairCount = 0;
+                        java.util.Set<com.fib.fib.init.entity.custom.GrapplingHookEntity> visited = new java.util.HashSet<>();
+                        for (var hook : hooks) {
+                            if (visited.contains(hook)) continue;
+                            visited.add(hook);
+                            var partner = hook.getPartnerHook();
+                            if (partner != null && !partner.isRemoved() && hooks.contains(partner)) {
+                                visited.add(partner);
+                                pairCount++;
+                            }
+                        }
+                        for (var hook : hooks) {
+                            hook.setRetracting();
+                            hook.clearPartnerHook();
+                        }
+
+                        // 成对的按数量返还（存储仓 -> 背包 -> 掉落）；「发射一半」的单枚不返还——
+                        // 其双钩物品仍在钩爪槽，关闭界面时由 validateDualHookDependency 弹出。
+                        GrapplingHookGunItem.refundDualHookRaw(player.level(), player, gunStack, pairCount);
+                    }
                 }
             }
         });
@@ -193,6 +237,9 @@ public class GrapplingHookMenu extends AbstractContainerMenu {
                 if (!ejected.isEmpty() && !player.getInventory().add(ejected)) {
                     player.drop(ejected, false);
                 }
+
+                // 双钩回收已移至槽位 4 的 set()：只有「卸下模块」这一事件才回收，
+                // 不能在 removed() 里判断模块是否存在，否则每次关闭 GUI 都会误回收。
             }
         }
     }

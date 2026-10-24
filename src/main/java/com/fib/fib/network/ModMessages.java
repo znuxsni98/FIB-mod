@@ -75,6 +75,18 @@ public class ModMessages {
                 .encoder(HookQuickShootPacket::toBytes)
                 .consumerMainThread(HookQuickShootPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(com.fib.fib.network.packet.SyncGunModePacket.class, nextId(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(com.fib.fib.network.packet.SyncGunModePacket::new)
+                .encoder(com.fib.fib.network.packet.SyncGunModePacket::toBytes)
+                .consumerMainThread(com.fib.fib.network.packet.SyncGunModePacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(com.fib.fib.network.packet.OffhandGunUsePacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(com.fib.fib.network.packet.OffhandGunUsePacket::new)
+                .encoder(com.fib.fib.network.packet.OffhandGunUsePacket::toBytes)
+                .consumerMainThread(com.fib.fib.network.packet.OffhandGunUsePacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

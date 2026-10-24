@@ -37,6 +37,9 @@ public class HookModeSwitchPacket {
             }
             if (held.getItem() instanceof GrapplingHookGunItem) {
                 GrapplingHookGunItem.cycleMode(held, player);
+                // 物品 NBT 不会自动同步：回传新模式，否则客户端组合键/HUD 读到的仍是旧模式
+                com.fib.fib.network.ModMessages.sendToPlayer(
+                        new com.fib.fib.network.packet.SyncGunModePacket(held), player);
             }
         });
         return true;

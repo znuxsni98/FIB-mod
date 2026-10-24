@@ -151,8 +151,8 @@
   "fib_mod.hook_mode.dual": "双钩模式",
   "fib_mod.hook_mode.quick": "快速模式",
   "fib_mod.mining_mode.off": "关闭",
-  "fib_mod.mining_mode.all": "开启（破坏有掉落物的）",
-  "fib_mod.mining_mode.breakable": "开启",
+  "fib_mod.mining_mode.all": "有掉落物",
+  "fib_mod.mining_mode.breakable": "仅破坏",
   "fib_mod.grapple_mode.stable": "稳固模式 (自身不动)",
   "fib_mod.grapple_mode.pull_towards": "拉向模式 (拉向目标)",
 

@@ -152,8 +152,8 @@
   "fib_mod.hook_mode.dual": "Dual Hook Mode",
   "fib_mod.hook_mode.quick": "Quick Mode",
   "fib_mod.mining_mode.off": "Off",
-  "fib_mod.mining_mode.all": "On (break blocks with drops)",
-  "fib_mod.mining_mode.breakable": "On",
+  "fib_mod.mining_mode.all": "Drops Only",
+  "fib_mod.mining_mode.breakable": "Break Only",
   "fib_mod.grapple_mode.stable": "Stable (Player Immobile)",
   "fib_mod.grapple_mode.pull_towards": "Pull Towards (Pulls to Target)",
 
