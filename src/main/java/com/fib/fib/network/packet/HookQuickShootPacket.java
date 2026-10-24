@@ -29,6 +29,34 @@ public class HookQuickShootPacket {
             ServerPlayer player = context.getSender();
             if (player == null) return;
 
+            ItemStack held = player.getMainHandItem();
+            InteractionHand hand = InteractionHand.MAIN_HAND;
+            if (!(held.getItem() instanceof GrapplingHookGunItem)) {
+                held = player.getOffhandItem();
+                hand = InteractionHand.OFF_HAND;
+            }
+            if (!(held.getItem() instanceof GrapplingHookGunItem gun)) {
+                return;
+            }
+
+            // 快速模式：中键 = 立即回收空中/悬停的快速钩爪，并立即重发第 1 枚。
+            // 不走待发射队列，避免"等旧钩爪飞回"的延迟 —— 快速模式本身是连续摆荡。
+            if (GrapplingHookGunItem.getMode(held) == GrapplingHookGunItem.Mode.QUICK) {
+                List<GrapplingHookEntity> quickHooks = player.level().getEntitiesOfClass(
+                        GrapplingHookEntity.class,
+                        player.getBoundingBox().inflate(256.0),
+                        h -> h.getShooter() == player && !h.isRemoved() && h.isQuickMode()
+                                && h.getHookState() != GrapplingHookEntity.State.RETRACTING
+                                && h.getHookState() != GrapplingHookEntity.State.DROPPING
+                );
+                for (GrapplingHookEntity hook : quickHooks) {
+                    hook.setRetracting();
+                    hook.clearPartnerHook();
+                }
+                gun.fireQuickHook(player, held, hand);
+                return;
+            }
+
             List<GrapplingHookEntity> hooks = player.level().getEntitiesOfClass(
                     GrapplingHookEntity.class,
                     player.getBoundingBox().inflate(256.0),

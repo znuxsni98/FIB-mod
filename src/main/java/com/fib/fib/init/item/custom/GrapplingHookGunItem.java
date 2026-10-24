@@ -1127,6 +1127,11 @@ public class GrapplingHookGunItem extends Item {
         return shootHook(player.level(), player, stack, hand, null);
     }
 
+    /** 对外暴露的快速模式发射入口（发射第 1 枚，供中键重发使用）。 */
+    public boolean fireQuickHook(Player player, ItemStack stack, InteractionHand hand) {
+        return shootHook(player.level(), player, stack, hand, null, true, false);
+    }
+
     private boolean shootHook(Level level, Player player, ItemStack stack, InteractionHand hand, @Nullable GrapplingHookEntity partnerHook) {
         return shootHook(level, player, stack, hand, partnerHook, false, false);
     }

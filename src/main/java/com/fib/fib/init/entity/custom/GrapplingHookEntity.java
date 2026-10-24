@@ -1377,10 +1377,10 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         Vec3 vel = shooter.getDeltaMovement();
         double radialSpeed = vel.dot(radialDir); // >0 朝锚点
 
-        // 攀岩自动上升速度（已按需求减半）
-        double maxSpeed = pressurized ? 0.45 : 0.30;
+        // 攀岩自动上升速度（当前为上次数值的 1.2 倍）
+        double maxSpeed = pressurized ? 0.54 : 0.36;
         double nearFactor = Math.min(1.0, Math.max(0.0, (dist - 1.6) / 5.0));
-        double targetSpeed = 0.08 + (maxSpeed - 0.08) * nearFactor;
+        double targetSpeed = 0.096 + (maxSpeed - 0.096) * nearFactor;
 
         // 攀岩 = 绳长约束：玩家在绳长内自由活动（可左右摆荡、可攀爬），
         // 只有超出绳长时才被拉住。攀爬由 Z+左/右键（改绳长）驱动，不自动拉向锚点。
@@ -1453,13 +1453,13 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                         return;
                     }
                     setRopeLength(getRopeLength() - 0.25f);
-                    // 文档 9.5：手动上升速度 0.20。只改绳长不会产生位移，
+                    // 手动上升速度 0.24（0.20 × 1.2）。只改绳长不会产生位移，
                     // 必须额外施加径向朝锚点的速度，否则玩家感觉“没反应”。
                     Vec3 dir = anchor.subtract(playerPos).scale(1.0 / dist);
                     Vec3 cur = shooter.getDeltaMovement();
                     double radial = cur.dot(dir);   // >0 朝锚点
-                    if (radial < 0.20) {
-                        applyMotionToPlayer(shooter, cur.add(dir.scale(0.20 - radial)));
+                    if (radial < 0.24) {
+                        applyMotionToPlayer(shooter, cur.add(dir.scale(0.24 - radial)));
                     }
                     shooter.resetFallDistance();
                 }
