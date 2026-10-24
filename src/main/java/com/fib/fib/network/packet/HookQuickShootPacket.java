@@ -94,7 +94,12 @@ public class HookQuickShootPacket {
         }
     }
 
-    /** 快速模式的发射（带 quickMode 标记，供 QUICK 模式中键回收完成后调用）。 */
+    /**
+     * 快速模式的发射（带 quickMode 标记，供 QUICK 模式中键回收完成后调用）。
+     *
+     * 边界：登记请求到真正发射之间可能隔了几 tick，玩家可能已经按 R 切走模式。
+     * 此时不能再发一枚 quickMode=true 的钩爪（它会绕过双钩配对逻辑）。
+     */
     public static void fireQuickNow(ServerPlayer player) {
         InteractionHand hand = InteractionHand.MAIN_HAND;
         ItemStack held = player.getMainHandItem();
@@ -102,8 +107,13 @@ public class HookQuickShootPacket {
             held = player.getOffhandItem();
             hand = InteractionHand.OFF_HAND;
         }
-        if (held.getItem() instanceof GrapplingHookGunItem gun) {
-            gun.fireQuickHook(player, held, hand);
+        if (!(held.getItem() instanceof GrapplingHookGunItem gun)) {
+            return;
         }
+        // 模式已切走：放弃本次发射，玩家再按中键即可
+        if (GrapplingHookGunItem.getMode(held) != GrapplingHookGunItem.Mode.QUICK) {
+            return;
+        }
+        gun.fireQuickHook(player, held, hand);
     }
 }
