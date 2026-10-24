@@ -1623,6 +1623,27 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
 
     /** 附着方块消失 -> 钩爪脱落，自由下落（不掉进玩家背包，也不瞬移消失）。 */
     public void startDropping() {
+        // 双钩组：一方脱落时，另一方必须同步收回 —— 否则会变成"孤钩"：
+        //   - isPaired() 为 false（无法被 80 格豁免）
+        //   - isDualHookMode() 仍为 true（渲染器不画玩家手绳）
+        //   - tickHooked 走 DUAL 分支（不响应普通右键）
+        // 结果是这枚钩爪看不见、摸不着、右键没反应。
+        // 同时成对装备因环境破坏而损失，返还 1 个双钩物品。
+        GrapplingHookEntity partner = getPartnerHook();
+        if (partner != null && !partner.isRemoved()
+                && partner.getHookState() != State.RETRACTING
+                && partner.getHookState() != State.DROPPING) {
+            partner.setRetracting();
+            partner.clearPartnerHook();
+            Player shooter = getShooter();
+            if (shooter != null) {
+                ItemStack held = getHeldGun(shooter);
+                if (held != null) {
+                    GrapplingHookGunItem.refundDualHookRaw(level(), shooter, held, 1);
+                }
+            }
+        }
+
         setHookState(State.DROPPING);
         noPhysics = false;
         hookedEntity = null;
@@ -1630,11 +1651,6 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         this.dropLanded = false;
         setTargetType(TargetType.NONE);
         setDeltaMovement(0.0, -0.05, 0.0);
-        // 断开双钩连接，避免 partner 继续画绳/施加约束
-        GrapplingHookEntity partner = getPartnerHook();
-        if (partner != null) {
-            partner.clearPartnerHook();
-        }
         clearPartnerHook();
     }
 
