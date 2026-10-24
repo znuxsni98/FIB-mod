@@ -211,11 +211,15 @@ public class GrapplingHookRenderer extends EntityRenderer<GrapplingHookEntity> {
             // 只由 id 较小的一方绘制，避免同一条绳画两遍
             if (entity.getId() > partner.getId()) return;
 
+            // 双钩之间的绳索：两端都用钩爪的实际 position（锚点中心），不加 +0.15D。
+            // +0.15D 是给「玩家手 → 钩爪」设计的（让绳索从钩爪上方出发）。
+            // 双钩之间若两端都 +0.15，垂直连接时会让绳索穿进上方方块、
+            // 或悬在下方方块上方，视觉上比实际间距长一截（约 0.15 格 ≈ 2.4 像素）。
             double ax = Mth.lerp(partialTicks, entity.xo, entity.getX());
-            double ay = Mth.lerp(partialTicks, entity.yo, entity.getY()) + 0.15D;
+            double ay = Mth.lerp(partialTicks, entity.yo, entity.getY());
             double az = Mth.lerp(partialTicks, entity.zo, entity.getZ());
             double bx = Mth.lerp(partialTicks, partner.xo, partner.getX());
-            double by = Mth.lerp(partialTicks, partner.yo, partner.getY()) + 0.15D;
+            double by = Mth.lerp(partialTicks, partner.yo, partner.getY());
             double bz = Mth.lerp(partialTicks, partner.zo, partner.getZ());
 
             renderRopeBetween(entity, poseStack, buffer, ax, ay, az, bx, by, bz);

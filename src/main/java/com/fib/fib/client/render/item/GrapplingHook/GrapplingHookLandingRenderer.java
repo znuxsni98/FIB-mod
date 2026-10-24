@@ -161,7 +161,15 @@ public class GrapplingHookLandingRenderer {
             r = 255; g = 60; b = 60;
         }
 
+        // 准星线条用 RenderType.lines() 默认带深度测试：
+        // 即使法线偏移 0.05，相机近距离或倾斜角度下仍可能被方块表面遮挡。
+        //
+        // 关键：MultiBufferSource 会延迟到帧末才 flush，单纯 disableDepthTest 作用域太窄，
+        // flush 时状态已恢复。必须在禁用深度测试期间强制 endBatch 立即绘制。
+        com.mojang.blaze3d.systems.RenderSystem.disableDepthTest();
         renderLandingMarker(consumer, pose, hitPoint, hitFace, r, g, b);
+        mc.renderBuffers().bufferSource().endBatch(RenderType.lines());
+        com.mojang.blaze3d.systems.RenderSystem.enableDepthTest();
 
         poseStack.popPose();
     }
@@ -170,7 +178,10 @@ public class GrapplingHookLandingRenderer {
     private static void renderLandingMarker(VertexConsumer consumer, Matrix4f pose, Vec3 hitPoint,
                                             Direction face, int r, int g, int b) {
         Vec3 normalVec = Vec3.atLowerCornerOf(face.getNormal());
-        Vec3 center = hitPoint.add(normalVec.scale(0.015));
+        // 偏移 0.05 格（原 0.015 太小）：
+        // 准星线条与方块表面几乎共面时，深度缓冲精度不足会导致线条被方块遮挡，表现为时隐时现。
+        // 0.05 格足以拉开深度差，视觉上仍贴住表面。
+        Vec3 center = hitPoint.add(normalVec.scale(0.05));
 
         float innerR = 0.04f;
         float outerR = 0.15f;
@@ -180,21 +191,31 @@ public class GrapplingHookLandingRenderer {
         Vec3 vIn = getTangentOffset(face, 0, innerR);
         Vec3 vOut = getTangentOffset(face, 0, outerR);
 
-        // 四向十字准星准星线
-        // +U
-        consumer.vertex(pose, (float)(center.x + uIn.x), (float)(center.y + uIn.y), (float)(center.z + uIn.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
-        consumer.vertex(pose, (float)(center.x + uOut.x), (float)(center.y + uOut.y), (float)(center.z + uOut.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
-        // -U
-        consumer.vertex(pose, (float)(center.x - uIn.x), (float)(center.y - uIn.y), (float)(center.z - uIn.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
-        consumer.vertex(pose, (float)(center.x - uOut.x), (float)(center.y - uOut.y), (float)(center.z - uOut.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
-        // +V
-        consumer.vertex(pose, (float)(center.x + vIn.x), (float)(center.y + vIn.y), (float)(center.z + vIn.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
-        consumer.vertex(pose, (float)(center.x + vOut.x), (float)(center.y + vOut.y), (float)(center.z + vOut.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
-        // -V
-        consumer.vertex(pose, (float)(center.x - vIn.x), (float)(center.y - vIn.y), (float)(center.z - vIn.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
-        consumer.vertex(pose, (float)(center.x - vOut.x), (float)(center.y - vOut.y), (float)(center.z - vOut.z)).color(r, g, b, 240).normal(0, 1, 0).endVertex();
+        // 计算 U / V 轴单位向量。
+        // RenderType.lines() 着色器用 side = cross(viewDir, normal) 决定线宽扩展方向。
+        // 要让 side 垂直于线段方向，normal 必须【平行于线段方向】—— 这与直觉相反：
+        //   - side = cross(N, L)，若 normal = L（线段方向），则 side = cross(N, L) ⊥ L ✓
+        // 原版 LevelRenderer.renderLineBox 画 Y 方向的线就传 normal(0,1,0)，正是这个原理。
+        Vec3 uDir = getTangentOffset(face, 1.0, 0.0);  // U 轴单位向量
+        Vec3 vDir = getTangentOffset(face, 0.0, 1.0);  // V 轴单位向量
+        float ux = (float) uDir.x, uy = (float) uDir.y, uz = (float) uDir.z;
+        float vx = (float) vDir.x, vy = (float) vDir.y, vz = (float) vDir.z;
 
-        // 准星外环 (轻量 12 边形圆环)
+        // 四向十字准星准星线：法线传线段自己的方向
+        // +U（方向沿 U 轴，法线也传 U 轴）
+        consumer.vertex(pose, (float)(center.x + uIn.x), (float)(center.y + uIn.y), (float)(center.z + uIn.z)).color(r, g, b, 240).normal(ux, uy, uz).endVertex();
+        consumer.vertex(pose, (float)(center.x + uOut.x), (float)(center.y + uOut.y), (float)(center.z + uOut.z)).color(r, g, b, 240).normal(ux, uy, uz).endVertex();
+        // -U
+        consumer.vertex(pose, (float)(center.x - uIn.x), (float)(center.y - uIn.y), (float)(center.z - uIn.z)).color(r, g, b, 240).normal(ux, uy, uz).endVertex();
+        consumer.vertex(pose, (float)(center.x - uOut.x), (float)(center.y - uOut.y), (float)(center.z - uOut.z)).color(r, g, b, 240).normal(ux, uy, uz).endVertex();
+        // +V（方向沿 V 轴，法线也传 V 轴）
+        consumer.vertex(pose, (float)(center.x + vIn.x), (float)(center.y + vIn.y), (float)(center.z + vIn.z)).color(r, g, b, 240).normal(vx, vy, vz).endVertex();
+        consumer.vertex(pose, (float)(center.x + vOut.x), (float)(center.y + vOut.y), (float)(center.z + vOut.z)).color(r, g, b, 240).normal(vx, vy, vz).endVertex();
+        // -V
+        consumer.vertex(pose, (float)(center.x - vIn.x), (float)(center.y - vIn.y), (float)(center.z - vIn.z)).color(r, g, b, 240).normal(vx, vy, vz).endVertex();
+        consumer.vertex(pose, (float)(center.x - vOut.x), (float)(center.y - vOut.y), (float)(center.z - vOut.z)).color(r, g, b, 240).normal(vx, vy, vz).endVertex();
+
+        // 准星外环 (轻量 12 边形圆环)：每段的法线传该段的切线方向
         float ringR = 0.11f;
         int segments = 12;
         for (int i = 0; i < segments; i++) {
@@ -202,8 +223,11 @@ public class GrapplingHookLandingRenderer {
             double a2 = ((i + 1) * 2.0 * Math.PI) / segments;
             Vec3 off1 = getTangentOffset(face, Math.cos(a1) * ringR, Math.sin(a1) * ringR);
             Vec3 off2 = getTangentOffset(face, Math.cos(a2) * ringR, Math.sin(a2) * ringR);
-            consumer.vertex(pose, (float)(center.x + off1.x), (float)(center.y + off1.y), (float)(center.z + off1.z)).color(r, g, b, 200).normal(0, 1, 0).endVertex();
-            consumer.vertex(pose, (float)(center.x + off2.x), (float)(center.y + off2.y), (float)(center.z + off2.z)).color(r, g, b, 200).normal(0, 1, 0).endVertex();
+            // 该段切线方向 = off2 - off1（归一化）
+            Vec3 tangent = off2.subtract(off1).normalize();
+            float tx = (float) tangent.x, ty = (float) tangent.y, tz = (float) tangent.z;
+            consumer.vertex(pose, (float)(center.x + off1.x), (float)(center.y + off1.y), (float)(center.z + off1.z)).color(r, g, b, 200).normal(tx, ty, tz).endVertex();
+            consumer.vertex(pose, (float)(center.x + off2.x), (float)(center.y + off2.y), (float)(center.z + off2.z)).color(r, g, b, 200).normal(tx, ty, tz).endVertex();
         }
     }
 

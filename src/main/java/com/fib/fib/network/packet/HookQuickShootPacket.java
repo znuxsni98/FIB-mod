@@ -61,12 +61,14 @@ public class HookQuickShootPacket {
                 return;
             }
 
-            // 注意排除已成对的双钩：它们是"已部署装备"，中键这种快速操作不应误伤。
-            // 玩家要管理双钩组，必须切到 DUAL 模式用潜行右键。
+            // 注意排除已成对的双钩与孤钩：
+            //  - 已配对：已部署装备，中键这种快速操作不应误伤
+            //  - 孤钩（曾配对但 partner 已消失）：留给 tick 的孤钩检测返还，否则会静默丢物品
             List<GrapplingHookEntity> hooks = player.level().getEntitiesOfClass(
                     GrapplingHookEntity.class,
                     player.getBoundingBox().inflate(256.0),
-                    h -> h.getShooter() == player && !h.isRemoved() && !h.isPaired()
+                    h -> h.getShooter() == player && !h.isRemoved()
+                            && !h.isPaired() && !h.isEverPaired()
             );
 
             if (hooks.isEmpty()) {

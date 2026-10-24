@@ -565,9 +565,8 @@ public class GrapplingHookGunItem extends Item {
         if (hasDualHookModule(stack)) {
             Mode cur = getMode(stack);
             Mode nxt = (cur == Mode.QUICK) ? Mode.DUAL : Mode.QUICK;
-            // QUICK -> DUAL：回收所有快速钩爪（快速钩爪不应参与双钩配对）。
-            // DUAL  -> QUICK：不回收已成对的双钩（它们是"已部署装备"，切回 DUAL 才能管理）。
             if (cur == Mode.QUICK && nxt == Mode.DUAL) {
+                // QUICK -> DUAL：回收所有快速钩爪（快速钩爪不应参与双钩配对）
                 List<GrapplingHookEntity> quickHooks = player.level().getEntitiesOfClass(
                         GrapplingHookEntity.class,
                         player.getBoundingBox().inflate(256.0),
@@ -575,6 +574,26 @@ public class GrapplingHookGunItem extends Item {
                 for (GrapplingHookEntity h : quickHooks) {
                     h.setRetracting();
                     h.clearPartnerHook();
+                }
+            } else if (cur == Mode.DUAL && nxt == Mode.QUICK) {
+                // DUAL -> QUICK：回收未配对的单钩（含「发射一半」的那枚）。
+                // 已成对的双钩仍保留（已部署装备，切回 DUAL 才能管理）。
+                //
+                // 为什么必须回收：切到 QUICK 后，
+                //  - handleQuickMode 只找 isQuickMode() 的钩爪，不会操作这枚旧单钩
+                //  - 潜行右键的 QUICK 分支也只回收 isQuickMode()
+                //  - tickHooked 里 isDualHookMode() 对未配对单钩返回 false，不会维护它
+                // 结果这枚单钩会永久卡在 HOOKED，既无交互也回收不掉。
+                List<GrapplingHookEntity> unpaired = player.level().getEntitiesOfClass(
+                        GrapplingHookEntity.class,
+                        player.getBoundingBox().inflate(256.0),
+                        h -> h.getShooter() == player && !h.isRemoved()
+                                && !h.isQuickMode()
+                                && !h.isPaired() && !h.isEverPaired()
+                                && h.getHookState() != GrapplingHookEntity.State.RETRACTING
+                                && h.getHookState() != GrapplingHookEntity.State.DROPPING);
+                for (GrapplingHookEntity h : unpaired) {
+                    h.setRetracting();
                 }
             }
             setMode(stack, nxt);
@@ -682,18 +701,22 @@ public class GrapplingHookGunItem extends Item {
             }
         }
 
-        // 3. 非双钩模块：排除已成对的双钩
+        // 3. 非双钩模块：排除已成对/曾配对的双钩
         if (!hasDualHookModule(stack)) {
-            activeHooks.removeIf(GrapplingHookEntity::isPaired);
+            activeHooks.removeIf(h -> h.isPaired() || h.isEverPaired());
+        } else {
+            // 双钩模块：孤钩不参与成对回收（无 partner 可回收），留给孤钩检测返还
+            activeHooks.removeIf(h -> h.isEverPaired() && !h.isPaired());
         }
 
-        if (activeHooks.isEmpty()) {
-            // 空闲状态下的潜行右键不再打开界面（改装界面改由 H 键打开）
-            return InteractionResultHolder.pass(stack);
-        }
-
-        // 4. 双钩模块：需靠近 + 对准
-        if (hasDualHookModule(stack)) {
+        // 4. 双钩模块：需靠近 + 对准（本人钩爪）
+        //
+        // 逻辑顺序（避免抢占）：
+        //   - 本人有可回收的钩爪且对准 -> 优先回收本人的
+        //   - 本人没有可回收的钩爪 / 本人钩爪没对准 -> 检查跨玩家（回收他人的）
+        //   - 都没有 -> pass
+        boolean ownHookReady = !activeHooks.isEmpty();
+        if (ownHookReady && hasDualHookModule(stack)) {
             boolean nearAny = false;
             for (GrapplingHookEntity h : activeHooks) {
                 if (h.position().distanceTo(player.position()) <= RETRACT_RANGE) {
@@ -702,8 +725,37 @@ public class GrapplingHookGunItem extends Item {
                 }
             }
             if (!nearAny || !aimsAtAnyHookOrRope(player, activeHooks)) {
-                return InteractionResultHolder.pass(stack);
+                ownHookReady = false;
             }
+        }
+
+        // 5. 跨玩家回收：本人没有可回收的钩爪时，尝试回收附近其它玩家的已配对双钩。
+        //    不限双钩模块：任何潜行右键都能尝试（没模块的枪回收 → 物品按"先背包后掉落"处理）。
+        if (!ownHookReady && !level.isClientSide) {
+            List<GrapplingHookEntity> othersPaired = level.getEntitiesOfClass(
+                    GrapplingHookEntity.class,
+                    player.getBoundingBox().inflate(16.0),
+                    h -> h.getShooter() != player
+                            && !h.isRemoved()
+                            && h.isPaired()
+                            && h.getHookState() != GrapplingHookEntity.State.RETRACTING
+                            && h.getHookState() != GrapplingHookEntity.State.DROPPING);
+            if (!othersPaired.isEmpty()) {
+                boolean nearAny = false;
+                for (GrapplingHookEntity h : othersPaired) {
+                    if (h.position().distanceTo(player.position()) <= RETRACT_RANGE) {
+                        nearAny = true;
+                        break;
+                    }
+                }
+                if (nearAny && aimsAtAnyHookOrRope(player, othersPaired)) {
+                    return reclaimOtherPlayerPair(level, player, stack, othersPaired);
+                }
+            }
+        }
+
+        if (!ownHookReady) {
+            return InteractionResultHolder.pass(stack);
         }
 
         // 5. 多枚钩爪时，准星对准的那一枚优先
@@ -721,6 +773,9 @@ public class GrapplingHookGunItem extends Item {
                 // 只有成对回收才返还；单枚未配对的钩爪不返还
                 if (wasPair) {
                     refundDualHook(level, player, stack, 1);
+                    // 标记已返还，避免回收途中玩家死亡/重载时再返还一次
+                    targetedHook.markPairRefunded();
+                    partner.markPairRefunded();
                 }
                 // 回收后立即尝试补充，避免槽位空置
                 tryAutoRefillDualHook(stack);
@@ -753,11 +808,68 @@ public class GrapplingHookGunItem extends Item {
             }
             // 双钩：按成对组数返还双钩物品到存储仓（溢出掉落）
             refundDualHook(level, player, stack, pairCount);
+            // 标记所有钩爪的配对已处理，避免回收途中玩家死亡/重载时再返还一次
+            if (pairCount > 0) {
+                for (GrapplingHookEntity hook : activeHooks) {
+                    hook.markPairRefunded();
+                }
+            }
             // 回收后立即尝试补充，避免槽位空置
             tryAutoRefillDualHook(stack);
         }
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                 ModSounds.HOOK_RETRACT.get(), SoundSource.PLAYERS, 0.8f, 1.0f);
+        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+    }
+
+    /**
+     * 回收其它玩家的已配对双钩（潜行右键 + 靠近 + 对准触发）。
+     *
+     * 行为：
+     *  - 整对收回（两枚 setRetracting）
+     *  - 物品按回收者的枪返还：有双钩模块则进存储仓/背包，否则掉落世界
+     *  - 原发射者不会收到返还（物品已转手）
+     */
+    private InteractionResultHolder<ItemStack> reclaimOtherPlayerPair(
+            Level level, Player player, ItemStack stack, List<GrapplingHookEntity> othersPaired) {
+        // 找出被对准的那一枚（多对时优先准星最准）
+        GrapplingHookEntity targeted = findAimedHook(player, othersPaired);
+        if (targeted == null) {
+            // 只有一对时 findAimedHook 会返回 null（要求 size >= 2），取第一对
+            targeted = othersPaired.get(0);
+        }
+
+        GrapplingHookEntity partner = targeted.getPartnerHook();
+        if (partner == null || partner.isRemoved()) {
+            // 孤钩分支：不在跨玩家路径处理（交给原发射者的孤钩检测）
+            return InteractionResultHolder.pass(stack);
+        }
+
+        // 整对收回：飞向回收者（不是原发射者）
+        targeted.setRetractingToward(player);
+        partner.setRetractingToward(player);
+        targeted.clearPartnerHook();
+
+        // 返还给回收者：先尝试进背包，背包满再掉落（不走存储仓，因为可能没装双钩模块）
+        ItemStack refund = new ItemStack(com.fib.fib.init.item.ModItems.DUAL_HOOK.get());
+        if (!player.getInventory().add(refund)) {
+            player.drop(refund, false);
+        }
+
+        // 标记已处理，避免原发射者的孤钩检测重复返还
+        targeted.markPairRefunded();
+        partner.markPairRefunded();
+
+        // 如果回收者装有双钩模块，尝试从存储仓补充到钩爪槽
+        if (hasDualHookModule(stack)) {
+            tryAutoRefillDualHook(stack);
+        }
+
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                ModSounds.HOOK_RETRACT.get(), SoundSource.PLAYERS, 0.8f, 1.2f);
+        player.displayClientMessage(
+                Component.translatable("fib_mod.hook.retracted_targeted")
+                        .withStyle(ChatFormatting.YELLOW), true);
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
 
@@ -834,9 +946,12 @@ public class GrapplingHookGunItem extends Item {
         if (loaded > 0) {
             // 选择「最近发射（id 最大）且尚未配对」的钩爪作为连接目标。
             // 不能取列表第一个：那会让新钩爪连到旧组的钩爪上，造成跨组串线。
+            // 问题 C：还要跳过「存活过久」的孤儿钩爪（可能是上一对的残留），
+            // 避免新对的第 2 枚误连到旧孤儿上。
             GrapplingHookEntity anchorHook = null;
             for (GrapplingHookEntity h : activeHooks) {
                 if (h.getPartnerHook() != null) continue;
+                if (h.tickCount > PAIR_ANCHOR_MAX_AGE_TICKS) continue;
                 if (anchorHook == null || h.getId() > anchorHook.getId()) {
                     anchorHook = h;
                 }
@@ -871,6 +986,7 @@ public class GrapplingHookGunItem extends Item {
             GrapplingHookEntity anchorHook = null;
             for (GrapplingHookEntity h : activeHooks) {
                 if (h.getPartnerHook() != null) continue;
+                if (h.tickCount > PAIR_ANCHOR_MAX_AGE_TICKS) continue;   // 跳过孤儿
                 if (anchorHook == null || h.getId() > anchorHook.getId()) {
                     anchorHook = h;
                 }
@@ -893,6 +1009,13 @@ public class GrapplingHookGunItem extends Item {
 
     /** 回收钩爪所需的最近距离（格）。 */
     private static final double RETRACT_RANGE = 1.5;
+
+    /**
+     * 配对锚点最大存活时长（tick）：10 秒。
+     * 超过这个时间的未配对钩爪视为"上一对的残留"，不再作为新对第 2 枚的配对目标，
+     * 避免跨对串线。玩家发第 1 枚后 10 秒内未发第 2 枚，会被视为重新开始一对。
+     */
+    private static final int PAIR_ANCHOR_MAX_AGE_TICKS = 200;
 
     /** 在多个钩爪中，找出准星最对准的那一枚（无命中返回 null）。 */
     @Nullable
@@ -951,19 +1074,22 @@ public class GrapplingHookGunItem extends Item {
             activeHooks.removeIf(GrapplingHookEntity::isQuickMode);
         }
 
-        // 非双钩模式下：已成对连接的双钩属于“已部署装备”，
-        // 不应阻塞单钩的发射与交互（它们只受两钩间拴绳约束）。
-        if (!(hasDualHookModule(stack) && hasDualHookItem(stack))) {
-            activeHooks.removeIf(GrapplingHookEntity::isPaired);
+        // ===== 双钩模块：无论槽位是否有物品，一律走双钩专属路径 =====
+        // 关键：绝不能落到 handleNormalInteraction（牵引 / 攀爬 / 拾取），
+        // 否则"双钩模块 + 槽位空"时会卡出牵引模式的功能。
+        if (hasDualHookModule(stack)) {
+            if (!activeHooks.isEmpty()) {
+                return handleDualMode(level, player, stack, hand, activeHooks);
+            }
+            return handleIdleFire(level, player, stack, hand);
         }
+
+        // 非双钩模式下：已成对连接的双钩属于"已部署装备"，
+        // 不应阻塞单钩的发射与交互（它们只受两钩间拴绳约束）。
+        activeHooks.removeIf(GrapplingHookEntity::isPaired);
 
         // 2. 普通右键：活动钩爪交互
         if (!activeHooks.isEmpty()) {
-            // ===== 双钩模块：发射 → 发射第二枚 → 用尽后右键回收 =====
-            if (hasDualHookModule(stack) && hasDualHookItem(stack)) {
-                return handleDualMode(level, player, stack, hand, activeHooks);
-            }
-
             // 针对已存在的钩爪进行交互（拉取 / 回收）
             return handleNormalInteraction(level, player, stack, activeHooks);
         }
@@ -1012,6 +1138,9 @@ public class GrapplingHookGunItem extends Item {
     private void applyPickupInteraction(Player player, List<GrapplingHookEntity> normalHooks) {
         for (GrapplingHookEntity hook : normalHooks) {
             if (!hook.isHooked()) continue;
+            // 孤钩（曾配对但 partner 已消失）留给 tick 的孤钩检测处理（会返还），
+            // 这里回收会导致物品丢失。
+            if (hook.isEverPaired()) continue;
             GrapplingHookEntity.TargetType t = hook.getTargetType();
             if (t == GrapplingHookEntity.TargetType.LIVING
                     || t == GrapplingHookEntity.TargetType.ITEM) {
@@ -1041,6 +1170,8 @@ public class GrapplingHookGunItem extends Item {
     private void applyPullOrClimbInteraction(Mode mode, List<GrapplingHookEntity> normalHooks) {
         for (GrapplingHookEntity hook : normalHooks) {
             if (!hook.isHooked()) continue;
+            // 孤钩留给孤钩检测处理（会返还），避免普通交互回收导致丢物品
+            if (hook.isEverPaired()) continue;
             if (mode == Mode.PULL) {
                 hook.startPulling();
             } else {

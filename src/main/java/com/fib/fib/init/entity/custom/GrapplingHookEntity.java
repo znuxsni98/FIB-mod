@@ -22,6 +22,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -31,6 +33,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -60,7 +63,16 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         MINING,
         RETRACTING,
         /** 附着方块消失后自由下落（像钓鱼浮标一样掉下去）。 */
-        DROPPING
+        DROPPING,
+        /**
+         * 配对松弛：已成对的双钩中，一枚锚定方块被破坏后自由下落。
+         * 与 DROPPING 的区别：
+         *  - 保持配对（不清 partner，绳继续画）
+         *  - 受 leashLength 球面约束（像攀岩）
+         *  - 碰到方块/实体自动重新锚定
+         *  - 不会被死亡/回档等路径静默丢弃
+         */
+        LOOSE
     }
 
     public enum TargetType {
@@ -186,6 +198,43 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     /** 从攀岩切换到牵引后，是否处于"锁定当前位置"状态（绳长球面约束）。 */
     private boolean ropeLockedAfterClimb = false;
     /**
+     * 待解析的 partner UUID。
+     * 实体从磁盘加载时，同一区块的其它实体可能尚未加入 level 实体表，
+     * 此时 sl.getEntity(uuid) 会返回 null。不能立即判定为孤钩，
+     * 而是先存 UUID，在 getPartnerHook() 里延迟解析（那时双方都已加载）。
+     */
+    @Nullable
+    private UUID pendingPartnerUuid = null;
+    /**
+     * 待解析的发射者 UUID。
+     * 从磁盘重载后 owner 实体可能尚未加入 level 实体表，
+     * 导致 getOwner() 为 null、剪刀交互失效。
+     * 先存 UUID，在 getShooter() 里延迟解析。
+     */
+    @Nullable
+    private UUID pendingOwnerUuid = null;
+    /**
+     * 收回目标 UUID：默认 null 表示飞向发射者。
+     * 跨玩家回收时设为回收者 UUID —— 钩爪视觉上飞向回收者，而非原发射者。
+     */
+    @Nullable
+    private UUID retractTargetUuid = null;
+    /**
+     * 孤钩计数器：partner id 仍指向一个实体，但该实体当前解析不出来
+     * （区块卸载 / 实体被移除 / 重进存档）。超时后视为孤钩，收回并返还。
+     */
+    private int orphanTicks = 0;
+    /** 孤钩超时（tick）：5 秒仍解析不到 partner 即视为孤钩。 */
+    private static final int ORPHAN_TIMEOUT_TICKS = 100;
+    /** LOOSE 状态的空气阻力系数（每 tick 速度 × 该系数）。0.96 约 3 秒衰减到 1% 以下。 */
+    private static final double LOOSE_DAMPING = 0.96;
+    /**
+     * 是否曾经完成过配对（一旦为 true 永久保留）。
+     * 用于解决"partner 被移除后 id 归 -1，孤钩检测条件失效"的问题：
+     * 本端曾配对、现在 partner 为 null 时，仍应走孤钩收回流程。
+     */
+    private boolean everPaired = false;
+    /**
      * 快速模式到达半径。
      * 玩家碰撞箱半宽 0.3，钩爪贴在方块表面，玩家中心物理极限约 0.3 格。
      * 取 0.5：既"拉到钩爪位置"，又保证一定能判定到达（0.1 永远到不了 → 持续耗能 → 被收回）。
@@ -215,6 +264,16 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     @Override
     public boolean canBeCollidedWith() {
         return false;
+    }
+
+    /**
+     * 允许被准星选中（剪刀交互必需）。
+     * Entity#isPickable() 默认 false，覆盖后 interact() 才会被调用。
+     * 与 canBeCollidedWith() 无关：后者只影响物理碰撞，不影响交互射线。
+     */
+    @Override
+    public boolean isPickable() {
+        return true;
     }
 
     /** 钩爪头不可被伤害：任何伤害来源一律无效（含钻头、AOE、爆炸等）。 */
@@ -333,6 +392,17 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         }
     }
 
+    /**
+     * 收回，并指定飞向的目标玩家。
+     * 跨玩家回收时用来让钩爪飞向回收者（而非原发射者）。
+     */
+    public void setRetractingToward(@Nullable Player target) {
+        if (target != null) {
+            this.retractTargetUuid = target.getUUID();
+        }
+        setRetracting();
+    }
+
     public void startPulling() {
         setHookState(State.PULLING);
         obstructedTicks = 0;
@@ -360,12 +430,31 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
 
         this.partnerHook = partner;
         entityData.set(DATA_PARTNER_HOOK_ID, partner.getId());
+        this.everPaired = true;
+        // pendingPartnerUuid 保留为 partner 的 UUID（不是清空）：
+        // 供玩家死亡 / 存档保存 / 重载时做 UUID 裁决，不依赖实体是否已加载。
+        this.pendingPartnerUuid = partner.getUUID();
         partner.partnerHook = this;
         partner.entityData.set(DATA_PARTNER_HOOK_ID, this.getId());
+        partner.everPaired = true;
+        partner.pendingPartnerUuid = this.getUUID();
 
-        // 建立连接时记录两端距离作为拴绳长度（上限 20）
+        // leashLength 不在这里计算！
+        // setPartnerHook 在第 2 枚刚 spawn（还在玩家手里）时就被调用，
+        // 此时 position().distanceTo(partner.position()) 是「玩家 → 第1枚锚点」的距离，
+        // 而不是「两枚最终锚点的距离」。直接记录会导致拴绳长度严重偏大。
+        // 正确做法：由第 2 枚命中锚定后（applyHookedStateAfterHit 的 DUAL 分支）
+        // 调用 refreshLeashLength() 重新计算。
+        this.leashLength = 20.0;
+        partner.leashLength = 20.0;
+    }
+
+    /** 两端都已锚定后，重新计算拴绳长度（两枚锚点之间的距离，上限 20）。 */
+    public void refreshLeashLength() {
+        GrapplingHookEntity partner = getPartnerHook();
+        if (partner == null || partner.isRemoved()) return;
         double d = position().distanceTo(partner.position());
-        double len = Math.min(20.0, Math.max(0.0, d));
+        double len = Math.min(20.0, Math.max(1.0, d));
         this.leashLength = len;
         partner.leashLength = len;
     }
@@ -374,12 +463,41 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         return leashLength;
     }
 
+    /**
+     * partner 实体查找节流计数器：每 tick 都调 level().getEntity(partnerId) 在 partner
+     * 未加载时有实际开销，改为每 PARTNER_LOOKUP_INTERVAL tick 查一次。
+     */
+    private int partnerLookupCooldown = 0;
+    /** partner 查找间隔（tick）：20 = 1 秒 */
+    private static final int PARTNER_LOOKUP_INTERVAL = 20;
+
     @Nullable
     public GrapplingHookEntity getPartnerHook() {
-        if (partnerHook == null && entityData.get(DATA_PARTNER_HOOK_ID) != -1) {
-            Entity ent = level().getEntity(entityData.get(DATA_PARTNER_HOOK_ID));
-            if (ent instanceof GrapplingHookEntity hook) {
-                partnerHook = hook;
+        int partnerId = entityData.get(DATA_PARTNER_HOOK_ID);
+        if (partnerHook == null && partnerId != -1) {
+            // 节流：partner 未解析时每 20 tick 才尝试一次 level().getEntity，
+            // 避免每 tick 都做实体表查找（partner 不在加载区块时尤其浪费）。
+            if (partnerLookupCooldown > 0) {
+                partnerLookupCooldown--;
+            } else if (partnerId == -2) {
+                // 哨兵 -2：从磁盘恢复时 partner 尚未加载，按 UUID 延迟解析。
+                // 双方都加载完成后，第一次调用即可成功配对。
+                partnerLookupCooldown = PARTNER_LOOKUP_INTERVAL;
+                if (pendingPartnerUuid != null) {
+                    Entity found = (level() instanceof ServerLevel sl) ? sl.getEntity(pendingPartnerUuid) : null;
+                    if (found instanceof GrapplingHookEntity hook && !hook.isRemoved()) {
+                        partnerHook = hook;
+                        entityData.set(DATA_PARTNER_HOOK_ID, hook.getId());
+                        pendingPartnerUuid = null;
+                        everPaired = true;
+                    }
+                }
+            } else {
+                partnerLookupCooldown = PARTNER_LOOKUP_INTERVAL;
+                Entity ent = level().getEntity(partnerId);
+                if (ent instanceof GrapplingHookEntity hook) {
+                    partnerHook = hook;
+                }
             }
         }
         // 缓存指向已移除的实体 -> 视为断开
@@ -408,6 +526,108 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         return getPartnerHook() != null;
     }
 
+    /**
+     * 是否曾经完成过配对（一旦为 true 永久保留，直到 markPairRefunded 重置）。
+     * 用于识别"孤钩"：partner 已消失但配对关系仍待处理。
+     * 孤钩必须与已配对双钩同等对待 —— 否则会被普通交互回收且不返还。
+     */
+    public boolean isEverPaired() {
+        return everPaired;
+    }
+
+    /**
+     * 标记这一对双钩的返还已完成：清除 everPaired / pendingPartnerUuid / 孤钩计数。
+     * 供外部返还逻辑（潜行右键、死亡、孤钩等）调用，避免同一对双钩被重复返还。
+     */
+    public void markPairRefunded() {
+        this.everPaired = false;
+        this.orphanTicks = 0;
+        this.pendingPartnerUuid = null;
+    }
+
+    /**
+     * 获取孤钩的"配对方 UUID"（partner 已消失，只有 UUID 可用），供外部裁决。
+     * 未配对或未加载时返回 null。
+     */
+    @Nullable
+    public UUID getOrphanPartnerUuid() {
+        return pendingPartnerUuid;
+    }
+
+    /**
+     * 剪刀回收双钩：玩家手持剪刀右键钩爪实体。
+     *
+     * 触发条件：
+     *  - 手持剪刀（Items.SHEARS）
+     *  - 原版实体交互自带 3 格近距离 + 准星对准限制
+     *  - **任何玩家都能剪**（含非发射者）：双钩是"已部署装备"，视为世界中的可掠夺物
+     *
+     * 行为：剪一刀 -> 整对消失，掉落 1 个 DualHookItem（物品守恒）。
+     * 单钩阶段（partner=null）与已成对（partner 存在）都只掉 1 个。
+     */
+    @Override
+    public InteractionResult interact(Player player, InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+        if (!held.is(Items.SHEARS)) {
+            return InteractionResult.PASS;
+        }
+        // 已 RETRACTING 的钩爪不能剪：提前拦截，避免"音效播放但物品没掉"的错觉
+        if (getHookState() == State.RETRACTING) {
+            return InteractionResult.PASS;
+        }
+        if (level().isClientSide) {
+            return InteractionResult.SUCCESS;
+        }
+        level().playSound(null, getX(), getY(), getZ(),
+                SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0f, 1.0f);
+        shearIntoItem();
+        return InteractionResult.CONSUME;
+    }
+
+    /**
+     * 剪刀剪断：本钩爪被剪刀剪断，变成 DualHookItem 掉落物。
+     *
+     * 行为：
+     *  - 掉落 1 个 DualHookItem（在钩爪当前位置）
+     *  - 本钩爪 discard
+     *  - 如果存在 partner：partner 一并剪断并 discard（不再额外掉落，保持物品守恒）
+     *  - 已经 RETRACTING 的钩爪不能再剪（避免双重掉落）
+     */
+    public void shearIntoItem() {
+        if (level().isClientSide) return;
+        if (getHookState() == State.RETRACTING) return;
+        if (!(level() instanceof ServerLevel sl)) return;
+
+        // 物品守恒：一对双钩 = 1 个 DualHookItem 物品。
+        // 剪一刀只掉 1 个（不是两枚各掉 1 个），否则 1 个物品会变成 2 个。
+        ItemStack drop = new ItemStack(com.fib.fib.init.item.ModItems.DUAL_HOOK.get());
+        Block.popResource(sl, BlockPos.containing(position()), drop);
+
+        // partner 一并剪断（成对消失），不再额外掉落
+        GrapplingHookEntity partner = getPartnerHook();
+        if (partner != null && !partner.isRemoved() && partner.getHookState() != State.RETRACTING) {
+            partner.clearPartnerHook();
+            partner.markPairRefunded();
+            partner.discard();
+        }
+        clearPartnerHook();
+        markPairRefunded();
+        discard();
+    }
+
+    /**
+     * 获取配对方的 UUID，用于返还的平局裁决（保证跨重启稳定、只返还一次）。
+     * 优先用已解析的 partner；未解析时回退到 pendingPartnerUuid。
+     */
+    @Nullable
+    private UUID getPairPartnerUuid() {
+        GrapplingHookEntity partner = getPartnerHook();
+        if (partner != null && !partner.isRemoved()) {
+            return partner.getUUID();
+        }
+        return pendingPartnerUuid;
+    }
+
     /** 同步字段中的 partner id（-1 表示从未配对）。供渲染器判断"该配对但对方未加载"。 */
     public int getPartnerHookId() {
         return entityData.get(DATA_PARTNER_HOOK_ID);
@@ -421,7 +641,16 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         // 不用 getMode(gunStack)==DUAL：从 DUAL 切到 QUICK 后，已发射的双钩钩爪
         // 会被 refreshGunState 刷成 QUICK 模式，但那两枚钩爪本身仍是双钩配对，
         // 绳必须继续画在两钩之间。用 quickMode 区分即可。
-        return !quickMode && GrapplingHookGunItem.hasDualHookModule(gunStack);
+        //
+        // 判定条件：isPaired() || getPartnerHookId() != -1
+        //  - isPaired()：服务端/已解析 partner 的情况
+        //  - getPartnerHookId() != -1：客户端刚 spawn 时 partner 实体可能还没加载，
+        //    但同步字段 DATA_PARTNER_HOOK_ID 已经写入。此时必须仍视为双钩绳，
+        //    否则渲染器会短暂画出"玩家手 → 钩爪"的错误绳。
+        //  - 单钩阶段（还没发射第 2 枚）：id == -1 且 partner == null -> 返回 false，
+        //    画玩家手绳（与普通单钩一致）。
+        return !quickMode && GrapplingHookGunItem.hasDualHookModule(gunStack)
+                && (isPaired() || getPartnerHookId() != -1);
     }
 
     public void setQuickMode(boolean quick, boolean second) {
@@ -457,6 +686,16 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                 return player;
             }
         }
+        // 从磁盘重载：owner 实体可能尚未加入 level 实体表 -> 按 UUID 延迟解析
+        if (pendingOwnerUuid != null && level() instanceof ServerLevel sl) {
+            Entity found = sl.getEntity(pendingOwnerUuid);
+            if (found instanceof Player player) {
+                setOwner(player);
+                entityData.set(DATA_OWNER_ID, player.getId());
+                pendingOwnerUuid = null;
+                return player;
+            }
+        }
         return null;
     }
 
@@ -468,12 +707,79 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
 
         Player shooter = getShooter();
         if (!level().isClientSide) {
+            // 问题 B：玩家死亡/被移除时，成对双钩返还为掉落物，避免静默丢物品。
+            //
+            // 用 UUID 比较而非实体 id：id 跨存档会变，UUID 稳定；且双方 tick 顺序
+            // 不确定，若一方先 discard 后再比较 id，另一方可能读不到（getPartnerHook
+            // 会清空 -1），导致两边都不返还。UUID 从 pendingPartnerUuid 兜底读取，
+            // 即使 partner 已消失仍能正确裁决。
             if (shooter == null || !shooter.isAlive()) {
+                // 跨玩家回收优先：钩爪已 setRetractingToward(回收者)，原发射者下线/死亡不影响收回。
+                // 用一个占位 player 传入（tickRetracting 内部会按 retractTargetUuid 重新解析，
+                // 解析失败会 discard，不会用到这个占位）。
+                if (getHookState() == State.RETRACTING && retractTargetUuid != null) {
+                    if (level() instanceof ServerLevel sl) {
+                        Entity target = sl.getEntity(retractTargetUuid);
+                        if (target instanceof Player targetPlayer) {
+                            tickRetracting(targetPlayer);
+                        } else if (target == null) {
+                            discard();
+                        }
+                    }
+                    return;
+                }
+
+                // B1：已成对的双钩玩家死亡后仍留在世界（不 discard、不返还）。
+                // 需要跑基本维护逻辑（不依赖 shooter 的部分）：
+                //  - LOOSE：继续下落 / 球面约束 / 重锚定
+                //  - HOOKED：方块消失检测（否则锚定方块被破坏后不会切 LOOSE，钩爪永久卡死）
+                // 其它依赖 shooter 的逻辑（checkItemSwitch / refreshGunState 等）跳过。
+                if (isPaired()) {
+                    State deadState = getHookState();
+                    if (deadState == State.LOOSE) {
+                        tickLoose();
+                    } else if (deadState == State.HOOKED) {
+                        // 方块消失检测（双钩模式只做这一件事）
+                        if (getTargetType() == TargetType.BLOCK) {
+                            BlockPos checkPos = resolveHookedBlockPos();
+                            if (checkPos == null || level().getBlockState(checkPos).isAir()) {
+                                startDropping();
+                            }
+                        }
+                    }
+                    return;
+                }
+                // 未配对/孤钩：原返还 + discard 逻辑
+                if (everPaired) {
+                    UUID other = getPairPartnerUuid();
+                    if (other != null && getUUID().compareTo(other) < 0
+                            && level() instanceof ServerLevel sl) {
+                        ItemStack refund = new ItemStack(com.fib.fib.init.item.ModItems.DUAL_HOOK.get());
+                        Block.popResource(sl, BlockPos.containing(position()), refund);
+                    }
+                    markPairRefunded();
+                }
                 discard();
                 return;
             }
-            // 切换维度后旧维度残留的钩爪直接移除
+            // 切换维度：未配对的钩爪直接移除（旧逻辑）。
+            // 已配对的双钩不受影响 —— 留在原维度继续存在（用户要求）。
+            // 由于 shooter 已在新维度，后续 tick 里 shooter.level() 会持续
+            // 与本钩爪 level 不同，因此必须在这里直接 return，不进入后续依赖 shooter 的逻辑。
             if (shooter.level() != this.level()) {
+                if (isPaired()) {
+                    // 配对双钩留在原维度：只跑自主维护逻辑（LOOSE 下落 / HOOKED 方块消失检测）
+                    State crossState = getHookState();
+                    if (crossState == State.LOOSE) {
+                        tickLoose();
+                    } else if (crossState == State.HOOKED && getTargetType() == TargetType.BLOCK) {
+                        BlockPos checkPos = resolveHookedBlockPos();
+                        if (checkPos == null || level().getBlockState(checkPos).isAir()) {
+                            startDropping();
+                        }
+                    }
+                    return;
+                }
                 discard();
                 return;
             }
@@ -481,8 +787,9 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             // 以下情况不因距离强制收回：
             //  - 已成对的双钩（已部署装备）
             //  - 快速模式（设计上就是远距离摆荡，钩爪常离玩家 80+ 格）
-            if (st != State.RETRACTING && st != State.DROPPING
+            if (st != State.RETRACTING && st != State.DROPPING && st != State.LOOSE
                     && !isPaired()
+                    && !everPaired      // 孤钩必须留给下方孤钩检测返还，不能被 80 格先收走
                     && !quickMode
                     && position().distanceTo(shooter.position()) > 80.0) {
                 setRetracting();
@@ -499,6 +806,50 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             // 发射后再切换 PULL/CLIMB 模式：让已锚定的方块目标跟随模式切换状态
             syncStateWithMode();
 
+            // 问题 A：孤钩检测。partner 解析不出来（区块卸载 / 被移除 / 重进存档）时，
+            // 本钩爪会退化成"隐形幽灵钩"：
+            //   - isPaired() = false（失去 80 格豁免）
+            //   - isDualHookMode() = true（渲染器不画手绳）
+            //   - tickHooked 走 DUAL 分支（不响应普通右键）
+            // 超时后视为孤钩，收回并返还 1 个双钩物品。
+            //
+            // 判定条件：曾经配对过（everPaired）但当前 partner 为 null。
+            // 为什么不用 getPartnerHookId() != -1：
+            // partner 被移除后 getPartnerHook() 会把 id 清成 -1，导致本端检测失效，
+            // 从而变成永久幽灵钩。everPaired 一旦为 true 就永久保留，不受清空影响。
+            {
+                State orphanState = getHookState();
+                if (orphanState != State.RETRACTING && orphanState != State.DROPPING
+                        && everPaired && getPartnerHook() == null) {
+                    orphanTicks++;
+                    if (orphanTicks > ORPHAN_TIMEOUT_TICKS) {
+                        ItemStack held = getHeldGun(shooter);
+                        if (held != null) {
+                            GrapplingHookGunItem.refundDualHookRaw(level(), shooter, held, 1);
+                        }
+                        // 清除 everPaired / pendingPartnerUuid，避免后续死亡/重载再次返还
+                        markPairRefunded();
+                        clearPartnerHook();
+                        setRetracting();
+                        return;
+                    }
+                } else {
+                    orphanTicks = 0;
+                }
+            }
+
+            // 跨玩家回收：RETRACTING 且指定了回收者时，飞向回收者而不是原发射者
+            if (getHookState() == State.RETRACTING && retractTargetUuid != null
+                    && level() instanceof ServerLevel sl) {
+                Entity target = sl.getEntity(retractTargetUuid);
+                if (target instanceof Player targetPlayer && targetPlayer.isAlive()) {
+                    tickRetracting(targetPlayer);
+                } else if (target == null) {
+                    discard();
+                }
+                return;
+            }
+
             switch (getHookState()) {
                 case FLYING -> tickFlying(shooter);
                 case HOOKED -> tickHooked(shooter);
@@ -507,6 +858,7 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                 case MINING -> tickMining(shooter);
                 case RETRACTING -> tickRetracting(shooter);
                 case DROPPING -> tickDropping();
+                case LOOSE -> tickLoose();
             }
 
             // ===== 双钩「拴绳式」连接（单向刚性）=====
@@ -520,11 +872,14 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                     clearPartnerHook();
                     partner = null;
                 }
+                // LOOSE 状态在 tickLoose 里自行做球面约束，这里不重复施加
                 if (partner != null
                         && partner.getHookState() != State.RETRACTING
                         && selfState != State.RETRACTING
                         && selfState != State.DROPPING
-                        && partner.getHookState() != State.DROPPING) {
+                        && selfState != State.LOOSE
+                        && partner.getHookState() != State.DROPPING
+                        && partner.getHookState() != State.LOOSE) {
                     constrainPair(this, partner, position().distanceTo(partner.position()));
                 }
             }
@@ -564,11 +919,28 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
      * 必须经过“切走 → 切回”才触发收回，否则钩爪刚射出就会被立刻收掉。
      */
     private void checkItemSwitch(Player shooter) {
-        // 双钩已成对连接：视为已部署的装备，切换物品栏不收回
+        // 双钩已成对：视为已部署的装备，切换物品栏不收回（含 LOOSE 松弛状态）。
+        // 只要配对就豁免，不管两枚的状态 —— 成对回收由玩家主动触发（潜行右键），
+        // 不应因为切换物品栏意外断开一对。
+        if (isPaired()) {
+            return;
+        }
+
         GrapplingHookEntity partner = getPartnerHook();
         if (partner != null && !partner.isRemoved()
                 && getHookState() != State.RETRACTING && partner.getHookState() != State.RETRACTING) {
             return;
+        }
+
+        // 孤钩保护：曾经配对、partner 已消失时，收回前必须返还，否则物品静默丢失。
+        // 只由 UUID 较小的一方返还，避免双方同时触发。
+        if (everPaired && getPartnerHook() == null) {
+            UUID other = pendingPartnerUuid;
+            ItemStack held = getHeldGun(shooter);
+            if (held != null && (other == null || getUUID().compareTo(other) < 0)) {
+                GrapplingHookGunItem.refundDualHookRaw(level(), shooter, held, 1);
+            }
+            markPairRefunded();
         }
 
         // 1. 手上（主手/副手）没有任何钩爪枪 -> 立即收回
@@ -828,6 +1200,8 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             }
         } else if (mode == GrapplingHookGunItem.Mode.DUAL) {
             setHookState(State.HOOKED);
+            // 第 2 枚命中锚定后，两端位置才确定 -> 重新计算拴绳长度
+            refreshLeashLength();
         } else if (mode == GrapplingHookGunItem.Mode.CLIMB) {
             setHookState(State.CLIMBING);
         } else {
@@ -916,6 +1290,9 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
                 setHookState(State.MINING);
             } else {
                 setHookState(State.HOOKED);
+                // 双钩第 2 枚命中生物后，两端位置才确定 -> 同样要重算拴绳长度
+                // （refreshLeashLength 内部会判断 partner 是否存在，非双钩调用无害）
+                refreshLeashLength();
             }
         }
     }
@@ -1063,7 +1440,16 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     private void updateAnchorTarget() {
         if (getTargetType() == TargetType.LIVING || getTargetType() == TargetType.ITEM) {
             if (hookedEntity == null || !hookedEntity.isAlive() || hookedEntity.isRemoved()) {
-                setRetracting();
+                // 三种情况分开处理：
+                //  - 已配对（partner 存在）：进入 LOOSE 松弛下落，留在世界
+                //  - 孤钩（everPaired 但 partner 已消失）：setRetracting，触发 checkItemSwitch 的
+                //    孤钩返还路径（否则 startDropping 会 markPairRefunded 导致物品丢失）
+                //  - 未配对单枚：原逻辑 setRetracting 飞向玩家
+                if (isPaired()) {
+                    startDropping();
+                } else {
+                    setRetracting();
+                }
                 return;
             }
             Vec3 pos = hookedEntity.position().add(0, hookedEntity.getBbHeight() / 2.0, 0);
@@ -1621,29 +2007,40 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         }
     }
 
-    /** 附着方块消失 -> 钩爪脱落，自由下落（不掉进玩家背包，也不瞬移消失）。 */
+    /**
+     * 附着方块消失后钩爪脱落。
+     *
+     * 分两种：
+     *  - 已成对的双钩：进入 LOOSE（配对松弛下落）。
+     *    保留配对、受绳长约束、碰到方块/实体自动重新锚定。
+     *    另一枚不动，绳继续画在两枚之间。这是用户要求的「双钩留在世界」语义。
+     *  - 未配对的单枚：走原 DROPPING（自由落体，落地静止）。
+     */
     public void startDropping() {
-        // 双钩组：一方脱落时，另一方必须同步收回 —— 否则会变成"孤钩"：
-        //   - isPaired() 为 false（无法被 80 格豁免）
-        //   - isDualHookMode() 仍为 true（渲染器不画玩家手绳）
-        //   - tickHooked 走 DUAL 分支（不响应普通右键）
-        // 结果是这枚钩爪看不见、摸不着、右键没反应。
-        // 同时成对装备因环境破坏而损失，返还 1 个双钩物品。
+        // 配对松弛：不断开 partner、不返还，进入 LOOSE
         GrapplingHookEntity partner = getPartnerHook();
         if (partner != null && !partner.isRemoved()
-                && partner.getHookState() != State.RETRACTING
-                && partner.getHookState() != State.DROPPING) {
-            partner.setRetracting();
-            partner.clearPartnerHook();
-            Player shooter = getShooter();
-            if (shooter != null) {
-                ItemStack held = getHeldGun(shooter);
-                if (held != null) {
-                    GrapplingHookGunItem.refundDualHookRaw(level(), shooter, held, 1);
-                }
+                && partner.getHookState() != State.RETRACTING) {
+            // 目标死亡/消失（LIVING/ITEM 脱落）：两枚钩爪本应自由下落。
+            // 但双钩钩同一生物时，两枚位置重合，refreshLeashLength 把 leashLength 钳到 1.0，
+            // 球面约束会把两枚互相拉扯在 1 格内 —— 看起来"没往下掉"。
+            // 修复：目标消失导致的脱落，重置 leashLength 为 20（球面约束失效），两枚各自自由落地。
+            boolean targetLost = getTargetType() == TargetType.LIVING || getTargetType() == TargetType.ITEM;
+            if (targetLost) {
+                this.leashLength = 20.0;
+                partner.leashLength = 20.0;
             }
+            setHookState(State.LOOSE);
+            noPhysics = false;
+            hookedEntity = null;
+            this.hookedBlockPos = null;
+            this.dropLanded = false;
+            setTargetType(TargetType.NONE);
+            setDeltaMovement(0.0, -0.05, 0.0);
+            return;
         }
 
+        // 未配对：原 DROPPING 逻辑
         setHookState(State.DROPPING);
         noPhysics = false;
         hookedEntity = null;
@@ -1652,6 +2049,86 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         setTargetType(TargetType.NONE);
         setDeltaMovement(0.0, -0.05, 0.0);
         clearPartnerHook();
+        markPairRefunded();
+    }
+
+    /**
+     * 配对松弛下落（State.LOOSE）。
+     *
+     * 模拟「用钩爪枪攀岩」的球面约束：
+     *  - 受重力下落（-0.04/tick，终端 -1.2）
+     *  - 与 partner 距离超过 leashLength 时消除向外的径向速度
+     *  - 碰到方块 -> 重新锚定（回到 HOOKED）
+     *  - 碰到生物/掉落物 -> 挂上（走 onHitEntity）
+     *  - partner 消失 -> 退化为普通 DROPPING
+     */
+    private void tickLoose() {
+        GrapplingHookEntity partner = getPartnerHook();
+        if (partner == null || partner.isRemoved()) {
+            // partner 没了：退化为普通 DROPPING
+            clearPartnerHook();
+            setHookState(State.DROPPING);
+            return;
+        }
+
+        // 计算球面约束
+        Vec3 self = position();
+        Vec3 partnerPos = partner.position();
+        double dist = self.distanceTo(partnerPos);
+        double limit = Math.min(20.0, Math.max(leashLength, partner.leashLength));
+
+        Vec3 motion = getDeltaMovement().add(0.0, -0.04, 0.0);
+        if (motion.y < -1.2) {
+            motion = new Vec3(motion.x, -1.2, motion.z);
+        }
+
+        // 球面约束：距离超过绳长时消除向外的径向速度分量
+        if (dist > limit && dist > 0.001) {
+            Vec3 radialDir = partnerPos.subtract(self).scale(1.0 / dist);   // 指向 partner
+            double radial = motion.dot(radialDir);   // <0 表示远离 partner
+            if (radial < 0) {
+                motion = motion.subtract(radialDir.scale(radial));
+            }
+        }
+
+        // 空气阻力：让摆动幅度逐渐衰减（避免长期微小抖动，减少性能开销）
+        motion = motion.scale(LOOSE_DAMPING);
+        // 速度足够小 -> 视为静止，跳过后续物理（但保留重锚定检测）
+        boolean nearlyStill = motion.lengthSqr() < 1.0E-6;
+
+        setDeltaMovement(motion);
+
+        // 碰撞检测：优先射线命中（精确），再兜底 move 碰撞
+        HitResult hit = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
+        if (hit.getType() != HitResult.Type.MISS) {
+            onHit(hit);
+            setDeltaMovement(Vec3.ZERO);
+            return;
+        }
+
+        // 静止时跳过 move()（避免无意义的物理计算）。
+        // 不需要再查射线：上一次射线检测（本方法开头）已经做过。
+        if (nearlyStill) {
+            return;
+        }
+
+        move(MoverType.SELF, motion);
+
+        // 射线擦边未命中但实际碰撞（与 tickFlying 的兜底一致）
+        if (this.horizontalCollision || this.verticalCollision) {
+            BlockPos anchor = HookGeometry.findSolidBlockNearby(level(), position());
+            if (anchor != null) {
+                Vec3 loc = position();
+                onHit(new BlockHitResult(loc, Direction.UP, anchor, false));
+            }
+            setDeltaMovement(Vec3.ZERO);
+            return;
+        }
+
+        // 掉出世界底部：移除（极端情况，无返还）
+        if (getY() < level().getMinBuildHeight() - 16) {
+            discard();
+        }
     }
 
     /** 是否已落地（落地后永久静止，不消失）。 */
@@ -1732,6 +2209,7 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
     // ==================== 6. 收回阶段 ====================
 
     private void tickRetracting(Player shooter) {
+        // 调用方（tick 分发）已经按 retractTargetUuid 解析好了目标玩家（若有）
         Vec3 targetPos = shooter.getEyePosition().subtract(0, 0.2, 0);
         Vec3 currentPos = position();
         Vec3 toShooter = targetPos.subtract(currentPos);
@@ -1847,6 +2325,25 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
             this.hookedBlockPos = BlockPos.of(tag.getLong("HookedBlockPos"));
         }
         this.dropLanded = tag.getBoolean("DropLanded");
+
+        // 发射者恢复：同样不能立即解析（玩家实体可能尚未加载），存 UUID 延迟解析。
+        if (tag.hasUUID("OwnerUuid")) {
+            this.pendingOwnerUuid = tag.getUUID("OwnerUuid");
+        }
+
+        // 双钩配对恢复：此处不能立即解析 UUID。
+        // 实体从磁盘加载时，同一区块的其它实体可能尚未加入 level 实体表，
+        // sl.getEntity(uuid) 会返回 null —— 若立即判定孤钩，会把本可恢复的配对误杀。
+        // 因此只存 UUID 到字段 + 哨兵 -2，实际解析延迟到 getPartnerHook()（此时双方都已加载）。
+        if (tag.hasUUID("PartnerUuid")) {
+            this.pendingPartnerUuid = tag.getUUID("PartnerUuid");
+            entityData.set(DATA_PARTNER_HOOK_ID, -2);
+            // 关键：从磁盘恢复时必须立刻标记 everPaired = true。
+            // 否则在 partner 尚未加载的窗口期内（getPartnerHook 返回 null），
+            // 孤钩检测条件 everPaired && getPartnerHook() == null 永远不满足，
+            // 5 秒兜底逻辑失效。
+            this.everPaired = true;
+        }
     }
 
     @Override
@@ -1855,6 +2352,23 @@ public class GrapplingHookEntity extends Projectile implements IEntityAdditional
         tag.putInt("TargetType", entityData.get(DATA_TARGET_TYPE));
         tag.putFloat("RopeLength", entityData.get(DATA_ROPE_LENGTH));
         tag.putInt("MaterialId", entityData.get(DATA_HOOK_MATERIAL_ID));
+        // 双钩配对：运行时实体 id 跨存档会变，必须存 UUID。
+        // 不存会导致重载后 isPaired() 变 false，两枚钩爪退化成不可见、不可操作的幽灵钩。
+        // 注意：partner 未加载时 getPartnerHook() 返回 null，此时用 pendingPartnerUuid 兜底，
+        // 否则会漏存配对关系，重启后仍退化。
+        // 发射者 UUID：重载后需要恢复，否则 getOwner() 为 null 导致剪刀交互失效
+        Entity hookOwner = getOwner();
+        if (hookOwner != null) {
+            tag.putUUID("OwnerUuid", hookOwner.getUUID());
+        } else if (pendingOwnerUuid != null) {
+            tag.putUUID("OwnerUuid", pendingOwnerUuid);
+        }
+
+        GrapplingHookEntity partner = getPartnerHook();
+        UUID pairUuid = (partner != null && !partner.isRemoved()) ? partner.getUUID() : pendingPartnerUuid;
+        if (pairUuid != null) {
+            tag.putUUID("PartnerUuid", pairUuid);
+        }
         if (!gunStack.isEmpty()) {
             tag.put("GunStack", gunStack.save(new CompoundTag()));
         }
