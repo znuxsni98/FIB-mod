@@ -39,8 +39,8 @@ public class HookQuickShootPacket {
                 return;
             }
 
-            // 快速模式：中键 = 立即回收空中/悬停的快速钩爪，并立即重发第 1 枚。
-            // 不走待发射队列，避免"等旧钩爪飞回"的延迟 —— 快速模式本身是连续摆荡。
+            // 快速模式：中键 = 先回收所有快速钩爪，回收完毕后发射新的第 1 枚。
+            // 关键：只回收快速钩爪（isQuickMode），双钩组是已部署装备，绝不能被中键波及。
             if (GrapplingHookGunItem.getMode(held) == GrapplingHookGunItem.Mode.QUICK) {
                 List<GrapplingHookEntity> quickHooks = player.level().getEntitiesOfClass(
                         GrapplingHookEntity.class,
@@ -49,11 +49,15 @@ public class HookQuickShootPacket {
                                 && h.getHookState() != GrapplingHookEntity.State.RETRACTING
                                 && h.getHookState() != GrapplingHookEntity.State.DROPPING
                 );
+                if (quickHooks.isEmpty()) {
+                    fireQuickNow(player);
+                    return;
+                }
                 for (GrapplingHookEntity hook : quickHooks) {
                     hook.setRetracting();
                     hook.clearPartnerHook();
                 }
-                gun.fireQuickHook(player, held, hand);
+                com.fib.fib.init.entity.custom.QuickShootQueue.scheduleQuickOnly(player);
                 return;
             }
 
@@ -87,6 +91,19 @@ public class HookQuickShootPacket {
         }
         if (held.getItem() instanceof GrapplingHookGunItem gun) {
             gun.fireHook(player, held, hand);
+        }
+    }
+
+    /** 快速模式的发射（带 quickMode 标记，供 QUICK 模式中键回收完成后调用）。 */
+    public static void fireQuickNow(ServerPlayer player) {
+        InteractionHand hand = InteractionHand.MAIN_HAND;
+        ItemStack held = player.getMainHandItem();
+        if (!(held.getItem() instanceof GrapplingHookGunItem)) {
+            held = player.getOffhandItem();
+            hand = InteractionHand.OFF_HAND;
+        }
+        if (held.getItem() instanceof GrapplingHookGunItem gun) {
+            gun.fireQuickHook(player, held, hand);
         }
     }
 }

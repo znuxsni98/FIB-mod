@@ -24,16 +24,27 @@ public final class QuickShootQueue {
     /** 超时时长（tick）：10 秒未完成则丢弃。 */
     private static final long TIMEOUT_TICKS = 200L;
 
-    /** 一条待发射请求：玩家 + 登记时的游戏时间。 */
-    private record PendingShot(ServerPlayer player, long scheduledAt) {}
+    /**
+     * 一条待发射请求：玩家 + 登记时的游戏时间 + 是否只等快速钩爪。
+     * quickOnly 用于 QUICK 模式：中键只回收快速钩爪，双钩组必须留在空中。
+     */
+    private record PendingShot(ServerPlayer player, long scheduledAt, boolean quickOnly) {}
 
     private static final Map<UUID, PendingShot> PENDING = new ConcurrentHashMap<>();
 
     private QuickShootQueue() {}
 
-    /** 登记一个「回收完成后立即发射」的请求。 */
+    /** 登记一个「回收完成后立即发射」的请求（等所有钩爪消失）。 */
     public static void schedule(ServerPlayer player) {
-        PENDING.put(player.getUUID(), new PendingShot(player, player.serverLevel().getGameTime()));
+        PENDING.put(player.getUUID(), new PendingShot(player, player.serverLevel().getGameTime(), false));
+    }
+
+    /**
+     * 登记一个「只等快速钩爪回收完成后发射」的请求。
+     * QUICK 模式使用：双钩组是已部署装备，不能被中键回收或阻塞发射。
+     */
+    public static void scheduleQuickOnly(ServerPlayer player) {
+        PENDING.put(player.getUUID(), new PendingShot(player, player.serverLevel().getGameTime(), true));
     }
 
     /** 服务器关闭时清空队列。 */
@@ -65,14 +76,21 @@ public final class QuickShootQueue {
                 continue;
             }
 
-            // 3. 钩爪已全部消失 -> 发射并移除
+            // 3. 等待中的钩爪已全部消失 -> 发射并移除
+            // quickOnly=true 时只看快速钩爪，双钩组不参与等待
+            final boolean quickOnly = req.quickOnly();
             boolean hasHook = !player.level().getEntitiesOfClass(
                     GrapplingHookEntity.class,
                     player.getBoundingBox().inflate(256.0),
-                    h -> h.getShooter() == player && !h.isRemoved()).isEmpty();
+                    h -> h.getShooter() == player && !h.isRemoved()
+                            && (!quickOnly || h.isQuickMode())).isEmpty();
             if (!hasHook) {
                 it.remove();
-                HookQuickShootPacket.fireNow(player);
+                if (quickOnly) {
+                    HookQuickShootPacket.fireQuickNow(player);
+                } else {
+                    HookQuickShootPacket.fireNow(player);
+                }
             }
         }
     }
