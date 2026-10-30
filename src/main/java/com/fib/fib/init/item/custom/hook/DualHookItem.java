@@ -13,36 +13,50 @@ import java.util.List;
 /**
  * 双钩物品：一对钩爪。
  * 放入钩爪枪的「钩爪槽」使用；配合双钩模块可发射两枚钩爪，两枚都发射后该物品被消耗。
- * 材质特性等同基础钩爪。
  */
 public class DualHookItem extends Item implements IHookMaterial {
-    public DualHookItem(Properties properties) {
+    private final String descriptionKey;
+    private final float baseDamage;
+    private final float waterBonusDamage;
+    private final boolean canHookBlocks;
+    private final boolean canHookHardBlocks;
+    private final boolean waterResistance;
+
+    public DualHookItem(Properties properties, String descriptionKey,
+                        float baseDamage, float waterBonusDamage,
+                        boolean canHookBlocks, boolean canHookHardBlocks, boolean waterResistance) {
         super(properties);
+        this.descriptionKey = descriptionKey;
+        this.baseDamage = baseDamage;
+        this.waterBonusDamage = waterBonusDamage;
+        this.canHookBlocks = canHookBlocks;
+        this.canHookHardBlocks = canHookHardBlocks;
+        this.waterResistance = waterResistance;
     }
 
     @Override
     public float getDamage(boolean inWater) {
-        return 4.0f;
+        return baseDamage + (inWater ? waterBonusDamage : 0.0f);
     }
 
     @Override
     public boolean canHookBlocks() {
-        return true;
+        return canHookBlocks;
     }
 
     @Override
     public boolean canHookHardBlocks() {
-        return false;
+        return canHookHardBlocks;
     }
 
     @Override
     public boolean hasWaterResistance() {
-        return false;
+        return waterResistance;
     }
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag isAdvanced) {
-        tooltip.add(Component.translatable("fib_mod.dual_hook.desc").withStyle(ChatFormatting.BLUE));
+        tooltip.add(Component.translatable(descriptionKey).withStyle(ChatFormatting.BLUE));
         super.appendHoverText(stack, level, tooltip, isAdvanced);
     }
 }

@@ -226,11 +226,11 @@ public class GrapplingHookRenderer extends EntityRenderer<GrapplingHookEntity> {
             return;
         }
 
-        // 保护：以下两种情况都不能退回到"玩家手 → 钩爪"的渲染，
-        // 否则会画出"玩家与钩爪连接"的假象：
-        //  1. 该钩爪本应已配对（partner id 有效），但对方实体当前未加载/未解析；
-        //  2. 它本身就是双钩模块发射的钩爪 —— 双钩的绳只连两钩之间，永不连玩家手。
-        if (entity.getPartnerHookId() != -1 || entity.isDualHookMode()) {
+        // 保护：本钩爪已进入配对关系（partner id 有效，含对方未加载的哨兵 -2）时，
+        // 绳只连两钩之间，绝不能退回到"玩家手 → 钩爪"，否则会画出假连接。
+        // 注意：双钩模块发射的第 1 枚在配对前 partner id 仍为 -1，
+        // 此时它本质是"手上枪发出的单钩"，必须画玩家手绳；配对后才改画两钩间的绳。
+        if (entity.getPartnerHookId() != -1) {
             return;
         }
 

@@ -139,7 +139,7 @@ public class GrapplingHookGunItem extends Item {
     }
 
     /**
-     * 消耗能量（方案 A：优先扣背罐气体，不足部分再扣枪内能量）。
+     * 消耗能量（优先扣背罐气体，不足部分再扣枪内能量）。
      *
      * 换算：1 秒气体 = 1 点能量。
      * 穿戴背罐时，消耗会直接从背罐气体中扣除，枪内能量条保持不动；
@@ -310,9 +310,14 @@ public class GrapplingHookGunItem extends Item {
      *  2. 存储仓放不下的部分掉落为世界物品。
      */
     public static void refundDualHook(Level level, Player player, ItemStack gun, int pairs) {
+        refundDualHook(level, player, gun, pairs, new ItemStack(com.fib.fib.init.item.ModItems.DUAL_HOOK.get()));
+    }
+
+    /** 按指定双钩物品变体返还（装双钩模块检查）。 */
+    public static void refundDualHook(Level level, Player player, ItemStack gun, int pairs, ItemStack hookItem) {
         if (level.isClientSide) return;
         if (!hasDualHookModule(gun)) return;
-        refundDualHookRaw(level, player, gun, pairs);
+        refundDualHookRaw(level, player, gun, pairs, hookItem);
     }
 
     /**
@@ -324,12 +329,20 @@ public class GrapplingHookGunItem extends Item {
      *  3. 背包也满：生成掉落物
      */
     public static void refundDualHookRaw(Level level, Player player, ItemStack gun, int pairs) {
+        refundDualHookRaw(level, player, gun, pairs, new ItemStack(com.fib.fib.init.item.ModItems.DUAL_HOOK.get()));
+    }
+
+    /**
+     * 按指定双钩物品（含羊毛/普通等变体）返还。
+     * 用于回收时原样返还玩家实际消耗的那一对，避免羊毛双钩变成普通双钩。
+     */
+    public static void refundDualHookRaw(Level level, Player player, ItemStack gun, int pairs, ItemStack hookItem) {
         if (level.isClientSide) return;
         if (pairs <= 0) return;
 
         ItemStackHandler storage = getStorageHandler(gun);
         for (int i = 0; i < pairs; i++) {
-            ItemStack refund = new ItemStack(com.fib.fib.init.item.ModItems.DUAL_HOOK.get());
+            ItemStack refund = hookItem.copyWithCount(1);
 
             // 1. 枪存储仓：先合并到同类未满槽，再放空槽
             refund = insertPrioritized(storage, refund);
@@ -772,7 +785,7 @@ public class GrapplingHookGunItem extends Item {
                 targetedHook.clearPartnerHook();
                 // 只有成对回收才返还；单枚未配对的钩爪不返还
                 if (wasPair) {
-                    refundDualHook(level, player, stack, 1);
+                    refundDualHook(level, player, stack, 1, targetedHook.getDualHookStack());
                     // 标记已返还，避免回收途中玩家死亡/重载时再返还一次
                     targetedHook.markPairRefunded();
                     partner.markPairRefunded();
@@ -790,7 +803,7 @@ public class GrapplingHookGunItem extends Item {
 
         // 6. 全部回收
         if (!level.isClientSide) {
-            // 统计成对组数：每对钩爪回收后返还 1 个双钩物品
+            // 逐对回收并返还：每对按「实际消耗的那一对」变体返还 1 个物品
             int pairCount = 0;
             java.util.Set<GrapplingHookEntity> visited = new java.util.HashSet<>();
             for (GrapplingHookEntity hook : activeHooks) {
@@ -800,14 +813,13 @@ public class GrapplingHookGunItem extends Item {
                 if (partner != null && !partner.isRemoved() && activeHooks.contains(partner)) {
                     visited.add(partner);
                     pairCount++;
+                    refundDualHook(level, player, stack, 1, hook.getDualHookStack());
                 }
             }
             for (GrapplingHookEntity hook : activeHooks) {
                 hook.setRetracting();
                 hook.clearPartnerHook();
             }
-            // 双钩：按成对组数返还双钩物品到存储仓（溢出掉落）
-            refundDualHook(level, player, stack, pairCount);
             // 标记所有钩爪的配对已处理，避免回收途中玩家死亡/重载时再返还一次
             if (pairCount > 0) {
                 for (GrapplingHookEntity hook : activeHooks) {
@@ -851,7 +863,8 @@ public class GrapplingHookGunItem extends Item {
         targeted.clearPartnerHook();
 
         // 返还给回收者：先尝试进背包，背包满再掉落（不走存储仓，因为可能没装双钩模块）
-        ItemStack refund = new ItemStack(com.fib.fib.init.item.ModItems.DUAL_HOOK.get());
+        // 按被回收那一对的实际变体返还，避免羊毛双钩变成普通双钩。
+        ItemStack refund = targeted.getDualHookStack();
         if (!player.getInventory().add(refund)) {
             player.drop(refund, false);
         }
@@ -969,7 +982,8 @@ public class GrapplingHookGunItem extends Item {
             if (!shootHook(level, player, stack, hand, anchorHook)) {
                 return InteractionResultHolder.fail(stack);
             }
-            if (!level.isClientSide) {
+            // 创造模式不消耗双钩：保持装填数与槽位物品不变
+            if (!level.isClientSide && !player.getAbilities().instabuild) {
                 setLoadedHooks(stack, loaded - 1);
                 if (loaded - 1 <= 0) {
                     clearHookSlot(stack);   // 发完即消耗
@@ -994,7 +1008,8 @@ public class GrapplingHookGunItem extends Item {
             if (!shootHook(level, player, stack, hand, anchorHook)) {
                 return InteractionResultHolder.fail(stack);
             }
-            if (!level.isClientSide) {
+            // 创造模式不消耗双钩
+            if (!level.isClientSide && !player.getAbilities().instabuild) {
                 setLoadedHooks(stack, reloaded - 1);
                 if (reloaded - 1 <= 0) {
                     clearHookSlot(stack);
@@ -1312,6 +1327,9 @@ public class GrapplingHookGunItem extends Item {
             float speed = pressurized ? 1.8f : 1.2f;
             hook.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, speed, 0.1f);
             hook.setQuickMode(quick, quickSecond);
+            if (dualHook && !quick) {
+                hook.setDualMode(true);
+            }
             level.addFreshEntity(hook);
             if (partnerHook != null && !partnerHook.isRemoved()) {
                 hook.setPartnerHook(partnerHook);

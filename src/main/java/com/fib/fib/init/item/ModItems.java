@@ -27,10 +27,19 @@ public class ModItems {
     public static final RegistryObject<Item> SOLAR_PANEL_CONTROLLER =
             ITEMS.register("solar_panel_controller", () -> new Item(new Item.Properties()));
 
-    /** 双钩物品：一对钩爪（双钩模块消耗品）。 */
+    /** 双钩物品：基础双钩。 */
     public static final RegistryObject<Item> DUAL_HOOK =
             ITEMS.register("dual_hook", () -> new com.fib.fib.init.item.custom.hook.DualHookItem(
-                    new Item.Properties().stacksTo(16)));
+                    new Item.Properties().stacksTo(16),
+                    "fib_mod.dual_hook.desc",
+                    4.0f, 0.0f, true, false, false));
+
+    /** 羊毛双钩物品：一对羊毛钩爪（0 伤害，可钩方块，适合安全拉取实体/掉落物）。 */
+    public static final RegistryObject<Item> WOOL_DUAL_HOOK =
+            ITEMS.register("wool_dual_hook", () -> new com.fib.fib.init.item.custom.hook.DualHookItem(
+                    new Item.Properties().stacksTo(16),
+                    "fib_mod.wool_dual_hook.desc",
+                    0.0f, 0.0f, true, false, false));
 
     public static final RegistryObject<Item> ICE_BALL =
             ITEMS.register("ice_ball", () -> new IceBallItem(new Item.Properties()));

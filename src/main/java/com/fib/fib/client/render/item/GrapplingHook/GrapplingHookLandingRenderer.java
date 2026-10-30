@@ -60,14 +60,10 @@ public class GrapplingHookLandingRenderer {
             return;
         }
 
-        // 活动钩爪数量检查：单钩模式已有钩爪或双钩模式已有2钩时不显示预测
-        List<GrapplingHookEntity> activeHooks = mc.level.getEntitiesOfClass(
-                GrapplingHookEntity.class,
-                player.getBoundingBox().inflate(64.0),
-                h -> h.getShooter() == player && !h.isRemoved()
-        );
-        if (!dualHook && !activeHooks.isEmpty()) return;
-        if (dualHook && activeHooks.size() >= 2) return;
+        // 不再因为“已有活动钩爪”而禁用准星。
+        // 玩家可能在双钩发射后，仍需要瞄准下一发（比如回收后立即射击），或者查看当前落点参考。
+        // 准星本身不消耗任何东西，也不影响发射逻辑（use 里有 activeHooks 检查）。
+        // 只要拿着枪且有能量，就无条件显示落点预测。
 
         // 计算弹道初速度与发射点
         float partialTick = event.getPartialTick();
@@ -81,7 +77,7 @@ public class GrapplingHookLandingRenderer {
         float f2 = Mth.cos(yRot * ((float) Math.PI / 180F)) * Mth.cos(xRot * ((float) Math.PI / 180F));
         Vec3 velocity = new Vec3(f, f1, f2).normalize().scale(speed);
 
-        // 射程无距离限制（设计文档 §8），此处不做距离截断。
+        // 射程无距离限制，此处不做距离截断。
 
         // 弹道模拟
         Vec3 currentPos = startPos;
